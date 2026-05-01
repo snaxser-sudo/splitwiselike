@@ -205,29 +205,41 @@ a {
   font-size: 1rem;
 }
 
-.split-search-bar {
+.split-steps {
   align-self: end;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(190px, 260px);
-  overflow: hidden;
-  border-radius: 14px;
-  background: #fff;
-  color: #1c2541;
+  gap: 12px;
+  align-items: stretch;
 }
 
-.split-search-bar span,
-.split-search-bar .button {
+.split-steps span,
+.split-steps .button {
   min-height: 68px;
 }
 
-.split-search-bar span {
+.split-steps span {
   display: flex;
   align-items: center;
-  padding: 0 22px;
-  border-right: 1px solid #c8cbe8;
-  color: #737898;
-  font-size: 1.08rem;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 1rem;
   font-weight: 800;
+}
+
+.split-steps strong {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #fff;
+  color: #09035f;
+  font-size: 0.92rem;
 }
 
 .google-button {
@@ -986,7 +998,7 @@ a {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .split-search-bar {
+  .split-steps {
     grid-template-columns: 1fr 1fr;
   }
 }
@@ -1026,7 +1038,7 @@ a {
   }
 
   .travel-card-grid,
-  .split-search-bar {
+  .split-steps {
     grid-template-columns: 1fr;
   }
 
@@ -1034,10 +1046,8 @@ a {
     min-height: 160px;
   }
 
-  .split-search-bar span {
+  .split-steps span {
     min-height: 52px;
-    border-right: 0;
-    border-bottom: 1px solid #c8cbe8;
   }
 
   .topbar-inner {

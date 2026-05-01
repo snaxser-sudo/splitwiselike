@@ -375,10 +375,10 @@ function renderAuth() {
             <span>такси, аренда, бензин</span>
           </article>
         </div>
-        <div class="split-search-bar">
-          <span>Кто платил?</span>
-          <span>За что?</span>
-          <span>Сколько?</span>
+        <div class="split-steps">
+          <span><strong>1</strong>Добавьте трату</span>
+          <span><strong>2</strong>Выберите участников</span>
+          <span><strong>3</strong>Сведите долги к одному переводу</span>
           <button class="button google-button" type="button" data-action="google-sign-in">${icon("log-in")}Начать</button>
         </div>
         <div class="auth-feedback">
