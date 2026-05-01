@@ -18,6 +18,11 @@
   --red-soft: #fee4e2;
   --green: #167b3f;
   --green-soft: #dcfce7;
+  --tutu-navy: #09035f;
+  --tutu-purple: #8368e8;
+  --tutu-lavender: #eeedff;
+  --tutu-orange: #ff7a00;
+  --tutu-sky: #16a9ee;
   --shadow: 0 12px 32px rgba(31, 41, 55, 0.08);
   --radius: 8px;
   --radius-sm: 6px;
@@ -870,6 +875,276 @@ a {
   border-bottom: 0;
 }
 
+.settlement-page {
+  grid-template-columns: minmax(0, 1fr) 380px;
+}
+
+.trip-hero {
+  padding: clamp(22px, 4vw, 36px);
+  border: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.14), transparent 38%),
+    linear-gradient(135deg, #7960e3 0%, #a58bf0 58%, #8669e8 100%);
+  color: #fff;
+  overflow: hidden;
+}
+
+.trip-hero-row {
+  align-items: stretch;
+}
+
+.trip-hero-copy {
+  display: grid;
+  align-content: center;
+  gap: 14px;
+}
+
+.eyebrow {
+  width: fit-content;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--tutu-navy);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.trip-hero h1 {
+  max-width: 720px;
+  color: #fff;
+  font-size: 3.6rem;
+}
+
+.trip-hero p {
+  max-width: 560px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.16rem;
+}
+
+.trip-invite-card {
+  min-width: min(100%, 260px);
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  justify-content: stretch;
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.36);
+}
+
+.trip-invite-card > span {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.trip-invite-card .code {
+  max-width: none;
+  background: #fff;
+  color: var(--tutu-navy);
+  font-size: 1rem;
+}
+
+.trip-invite-card .button {
+  width: 100%;
+  border-color: transparent;
+  background: var(--tutu-navy);
+  color: #fff;
+}
+
+.trip-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.trip-meta-row span {
+  min-height: 38px;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-weight: 850;
+}
+
+.trip-meta-row svg {
+  width: 17px;
+  height: 17px;
+}
+
+.settlement-summary .summary-tile {
+  min-height: 128px;
+  border: 0;
+  box-shadow: 0 12px 28px rgba(9, 3, 95, 0.08);
+}
+
+.settlement-summary .summary-tile.neutral {
+  background: var(--tutu-lavender);
+}
+
+.settlement-summary .summary-tile.positive {
+  background: #dff8e9;
+}
+
+.settlement-summary .summary-tile.negative {
+  background: #ffe8dd;
+}
+
+.summary-tile small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.members-panel,
+.settle-board,
+.expenses-board,
+.payments-history,
+.action-card {
+  border-color: #e2ddfb;
+}
+
+.settle-board {
+  background: #fbfbff;
+}
+
+.transfer-card {
+  grid-template-columns: minmax(0, 1fr) auto;
+  border-color: #ded8fb;
+  background: #f0efff;
+}
+
+.transfer-route {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.transfer-route div {
+  min-width: 0;
+}
+
+.transfer-route strong,
+.transfer-route span {
+  display: block;
+}
+
+.transfer-route strong {
+  color: var(--tutu-navy);
+}
+
+.transfer-route span:not(.mini-avatar):not(.transfer-arrow) {
+  color: #5f6190;
+  font-size: 0.84rem;
+}
+
+.transfer-arrow {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--tutu-navy);
+  font-weight: 900;
+}
+
+.transfer-side {
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
+.transfer-side .amount {
+  color: var(--tutu-navy);
+  font-size: 1.12rem;
+}
+
+.expense-ticket {
+  position: relative;
+  border-color: #ddd9fb;
+  background: #f2f3ff;
+}
+
+.expense-ticket::after {
+  content: "";
+  position: absolute;
+  right: 74px;
+  top: 0;
+  bottom: 0;
+  border-left: 2px dotted #c4bbf5;
+}
+
+.expense-ticket .expense-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.expense-ticket-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--tutu-navy);
+}
+
+.expense-ticket-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.expense-ticket .toolbar {
+  position: relative;
+  z-index: 1;
+  padding-left: 14px;
+}
+
+.expense-ticket .toolbar strong {
+  color: var(--tutu-navy);
+}
+
+.action-card {
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(9, 3, 95, 0.08);
+}
+
+.expense-action {
+  border-top: 5px solid var(--tutu-orange);
+}
+
+.settlement-action {
+  border-top: 5px solid var(--tutu-sky);
+}
+
+.action-card .panel-header svg {
+  color: var(--tutu-navy);
+}
+
+.action-card .button.primary,
+.action-card .button.secondary {
+  width: 100%;
+  min-height: 46px;
+  background: var(--tutu-navy);
+  border-color: var(--tutu-navy);
+  color: #fff;
+}
+
+.action-card .button.primary:hover,
+.action-card .button.secondary:hover {
+  background: #130c80;
+}
+
 .segmented {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1070,9 +1345,42 @@ a {
 
   .hero-row,
   .expense-head,
+  .expense-ticket .expense-head,
   .debt-item {
     grid-template-columns: 1fr;
     display: grid;
+  }
+
+  .trip-hero-row,
+  .transfer-card,
+  .transfer-route {
+    grid-template-columns: 1fr;
+  }
+
+  .trip-invite-card {
+    min-width: 0;
+  }
+
+  .trip-hero h1 {
+    font-size: 2.35rem;
+  }
+
+  .trip-hero p {
+    font-size: 1rem;
+  }
+
+  .expense-ticket::after {
+    display: none;
+  }
+
+  .expense-ticket .toolbar,
+  .transfer-side {
+    justify-items: stretch;
+    padding-left: 0;
+  }
+
+  .transfer-arrow {
+    transform: rotate(90deg);
   }
 
   .invite-box {

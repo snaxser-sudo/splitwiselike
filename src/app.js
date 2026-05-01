@@ -444,12 +444,12 @@ function renderApp() {
             <span class="mark">ТС</span>
             <span>Туту-сплит</span>
           </div>
-          <nav class="group-tabs" aria-label="Groups">
+          <nav class="group-tabs" aria-label="Группы">
             ${state.groups.map(renderGroupTab).join("")}
           </nav>
           <div class="account-menu">
-            <span class="avatar" title="${escapeAttribute(state.profile?.display_name || "Account")}">${escapeHtml(initials(state.profile?.display_name || state.session?.user?.email || "U"))}</span>
-            <button class="icon-button" data-action="sign-out" title="Sign out" aria-label="Sign out">${icon("log-out")}</button>
+            <span class="avatar" title="${escapeAttribute(state.profile?.display_name || "Аккаунт")}">${escapeHtml(initials(state.profile?.display_name || state.session?.user?.email || "U"))}</span>
+            <button class="icon-button" data-action="sign-out" title="Выйти" aria-label="Выйти">${icon("log-out")}</button>
           </div>
         </div>
       </header>
@@ -480,51 +480,51 @@ function renderGroupsPanel() {
     <section class="panel">
       <div class="panel-header">
         <div>
-          <h2>Groups</h2>
-          <p>${state.groups.length} active</p>
+          <h2>Поездки</h2>
+          <p>${state.groups.length} активных</p>
         </div>
         ${icon("users")}
       </div>
       <div class="group-list">
-        ${state.groups.map(renderGroupListItem).join("") || `<div class="muted">No groups yet.</div>`}
+        ${state.groups.map(renderGroupListItem).join("") || `<div class="muted">Пока нет групп.</div>`}
       </div>
     </section>
     <section class="panel">
       <div class="panel-header">
         <div>
-          <h2>New group</h2>
-          <p>Shared currency</p>
+          <h2>Новая поездка</h2>
+          <p>Общая валюта</p>
         </div>
         ${icon("plus")}
       </div>
       <form id="group-form">
         <div class="field">
-          <label for="group-name">Name</label>
-          <input id="group-name" name="name" placeholder="Lisbon trip" required maxlength="80" />
+          <label for="group-name">Название</label>
+          <input id="group-name" name="name" placeholder="Поездка в Казань" required maxlength="80" />
         </div>
         <div class="field">
-          <label for="group-currency">Currency</label>
+          <label for="group-currency">Валюта</label>
           <select id="group-currency" name="currency">
             ${["USD", "EUR", "GBP", "PLN", "UAH", "RUB", "GEL", "TRY"].map((currency) => `<option value="${currency}">${currency}</option>`).join("")}
           </select>
         </div>
-        <button class="button primary" type="submit">${icon("plus")}Create</button>
+        <button class="button primary" type="submit">${icon("plus")}Создать</button>
       </form>
     </section>
     <section class="panel">
       <div class="panel-header">
         <div>
-          <h2>Join</h2>
-          <p>Invite code</p>
+          <h2>Присоединиться</h2>
+          <p>Код приглашения</p>
         </div>
         ${icon("link")}
       </div>
       <form id="join-form">
         <div class="field">
-          <label for="invite-code">Code</label>
+          <label for="invite-code">Код</label>
           <input id="invite-code" name="inviteCode" autocomplete="off" required />
         </div>
-        <button class="button secondary" type="submit">${icon("log-in")}Join</button>
+        <button class="button secondary" type="submit">${icon("log-in")}Войти</button>
       </form>
     </section>
   `;
@@ -549,17 +549,17 @@ function renderProfilePanel() {
     <section class="panel">
       <div class="panel-header">
         <div>
-          <h2>Profile</h2>
+          <h2>Профиль</h2>
           <p>${escapeHtml(state.session?.user?.email || "")}</p>
         </div>
         ${icon("user")}
       </div>
       <form id="profile-form">
         <div class="field">
-          <label for="display-name">Display name</label>
+          <label for="display-name">Имя</label>
           <input id="display-name" name="displayName" value="${escapeAttribute(state.profile?.display_name || "")}" required maxlength="80" />
         </div>
-        <button class="button secondary" type="submit">${icon("check")}Save</button>
+        <button class="button secondary" type="submit">${icon("check")}Сохранить</button>
       </form>
     </section>
   `;
@@ -569,8 +569,8 @@ function renderEmptyWorkspace() {
   return `
     <section class="empty-state">
       <div>
-        <h2>No group selected</h2>
-        <p>Create a group or join one with an invite code.</p>
+        <h2>Выберите поездку</h2>
+        <p>Создайте группу или присоединитесь по коду приглашения.</p>
       </div>
     </section>
   `;
@@ -580,7 +580,7 @@ function renderGroupWorkspace(group) {
   const stats = calculateStats(group);
 
   return `
-    <section class="main-grid">
+    <section class="main-grid settlement-page">
       <div class="content-column">
         ${renderFeedback()}
         ${renderGroupHero(group)}
@@ -613,16 +613,23 @@ function renderGroupHero(group) {
   const inviteUrl = getInviteUrl(group.invite_code);
 
   return `
-    <section class="group-hero">
-      <div class="hero-row">
-        <div>
+    <section class="group-hero trip-hero">
+      <div class="hero-row trip-hero-row">
+        <div class="trip-hero-copy">
+          <span class="eyebrow">Взаиморасчеты</span>
           <h1>${escapeHtml(group.name)}</h1>
-          <p class="muted">${escapeHtml(group.currency)} - ${state.members.length} members</p>
+          <p>Все расходы, участники и переводы в одном маршруте.</p>
         </div>
-        <div class="invite-box">
-          <span class="code" title="${escapeAttribute(inviteUrl)}">${escapeHtml(group.invite_code)}</span>
-          <button class="icon-button" type="button" data-action="copy-invite" data-invite-url="${escapeAttribute(inviteUrl)}" title="Copy invite" aria-label="Copy invite">${icon("copy")}</button>
+        <div class="invite-box trip-invite-card">
+          <span>Код приглашения</span>
+          <strong class="code" title="${escapeAttribute(inviteUrl)}">${escapeHtml(group.invite_code)}</strong>
+          <button class="button secondary" type="button" data-action="copy-invite" data-invite-url="${escapeAttribute(inviteUrl)}" title="Скопировать приглашение" aria-label="Скопировать приглашение">${icon("copy")}Скопировать</button>
         </div>
+      </div>
+      <div class="trip-meta-row">
+        <span>${icon("wallet")}${escapeHtml(group.currency)}</span>
+        <span>${icon("users")}${state.members.length} участников</span>
+        <span>${icon("receipt")}${state.expenses.length} расходов</span>
       </div>
     </section>
   `;
@@ -632,21 +639,24 @@ function renderSummary(group, stats) {
   const balance = stats.userBalance;
   const balanceClass = balance > 0 ? "positive" : balance < 0 ? "negative" : "neutral";
   const balanceLabel =
-    balance > 0 ? "You are owed" : balance < 0 ? "You owe" : "You are settled";
+    balance > 0 ? "Вам вернут" : balance < 0 ? "Вы должны" : "Вы в расчете";
 
   return `
-    <section class="summary-grid">
+    <section class="summary-grid settlement-summary">
       <div class="summary-tile neutral">
-        <span>Total spent</span>
+        <span>Всего потрачено</span>
         <strong>${formatMoney(stats.totalSpent, group.currency)}</strong>
+        <small>по всем расходам</small>
       </div>
       <div class="summary-tile ${balanceClass}">
         <span>${balanceLabel}</span>
         <strong>${formatMoney(Math.abs(balance), group.currency)}</strong>
+        <small>ваш личный баланс</small>
       </div>
       <div class="summary-tile neutral">
-        <span>Open transfers</span>
+        <span>Нужно переводов</span>
         <strong>${stats.debts.length}</strong>
+        <small>после упрощения</small>
       </div>
     </section>
   `;
@@ -654,11 +664,11 @@ function renderSummary(group, stats) {
 
 function renderMembers() {
   return `
-    <section class="panel">
+    <section class="panel members-panel">
       <div class="panel-header">
         <div>
-          <h2>Members</h2>
-          <p>${state.members.length} people</p>
+          <h2>Участники</h2>
+          <p>${state.members.length} человек</p>
         </div>
         ${icon("users")}
       </div>
@@ -675,18 +685,18 @@ function renderMemberPill(member) {
     <span class="member-pill">
       <span class="mini-avatar">${escapeHtml(initials(name))}</span>
       <span>${escapeHtml(name)}</span>
-      ${member.role === "owner" ? `<span class="chip">owner</span>` : ""}
+      ${member.role === "owner" ? `<span class="chip">создатель</span>` : ""}
     </span>
   `;
 }
 
 function renderDebts(group, debts) {
   return `
-    <section class="panel">
+    <section class="panel settle-board">
       <div class="panel-header">
         <div>
-          <h2>Settle up</h2>
-          <p>${debts.length ? "Simplified balances" : "Everything is even"}</p>
+          <h2>Кто кому переводит</h2>
+          <p>${debts.length ? "Сводим все расходы к минимуму переводов" : "Все уже в расчете"}</p>
         </div>
         ${icon("wallet")}
       </div>
@@ -695,21 +705,31 @@ function renderDebts(group, debts) {
           debts
             .map(
               (debt) => `
-                <div class="debt-item">
-                  <div class="debt-line">
-                    <strong>${escapeHtml(memberName(debt.from))}</strong>
-                    <span>pays</span>
-                    <strong>${escapeHtml(memberName(debt.to))}</strong>
-                    <span class="amount">${formatMoney(debt.amount, group.currency)}</span>
+                <div class="debt-item transfer-card">
+                  <div class="debt-line transfer-route">
+                    <span class="mini-avatar">${escapeHtml(initials(memberName(debt.from)))}</span>
+                    <div>
+                      <strong>${escapeHtml(memberName(debt.from))}</strong>
+                      <span>переводит</span>
+                    </div>
+                    <span class="transfer-arrow">&rarr;</span>
+                    <span class="mini-avatar">${escapeHtml(initials(memberName(debt.to)))}</span>
+                    <div>
+                      <strong>${escapeHtml(memberName(debt.to))}</strong>
+                      <span>получает</span>
+                    </div>
                   </div>
-                  <button class="button secondary" type="button" data-action="prefill-settlement" data-from="${escapeAttribute(debt.from)}" data-to="${escapeAttribute(debt.to)}" data-amount="${debt.amount}">
-                    ${icon("check")}Settle
-                  </button>
+                  <div class="transfer-side">
+                    <strong class="amount">${formatMoney(debt.amount, group.currency)}</strong>
+                    <button class="button secondary" type="button" data-action="prefill-settlement" data-from="${escapeAttribute(debt.from)}" data-to="${escapeAttribute(debt.to)}" data-amount="${debt.amount}">
+                      ${icon("check")}Записать
+                    </button>
+                  </div>
                 </div>
               `,
             )
             .join("") ||
-          `<div class="empty-state"><div><h3>Settled</h3><p>No transfers needed right now.</p></div></div>`
+          `<div class="empty-state"><div><h3>Все в расчете</h3><p>Сейчас никому ничего переводить не нужно.</p></div></div>`
         }
       </div>
     </section>
@@ -718,16 +738,16 @@ function renderDebts(group, debts) {
 
 function renderExpenses(group) {
   return `
-    <section class="panel">
+    <section class="panel expenses-board">
       <div class="panel-header">
         <div>
-          <h2>Expenses</h2>
-          <p>${state.expenses.length} records</p>
+          <h2>Лента расходов</h2>
+          <p>${state.expenses.length} записей</p>
         </div>
         ${icon("receipt")}
       </div>
       <div class="expense-list">
-        ${state.expenses.map((expense) => renderExpenseItem(expense, group)).join("") || `<div class="empty-state"><div><h3>No expenses</h3><p>Add the first shared cost.</p></div></div>`}
+        ${state.expenses.map((expense) => renderExpenseItem(expense, group)).join("") || `<div class="empty-state"><div><h3>Расходов пока нет</h3><p>Добавьте первую общую трату.</p></div></div>`}
       </div>
     </section>
   `;
@@ -737,15 +757,16 @@ function renderExpenseItem(expense, group) {
   const splits = state.splitsByExpense.get(expense.id) || [];
 
   return `
-    <article class="expense-item">
+    <article class="expense-item expense-ticket">
       <div class="expense-head">
+        <span class="expense-ticket-icon">${icon("receipt")}</span>
         <div class="expense-title">
           <strong>${escapeHtml(expense.title)}</strong>
-          <span>Paid by ${escapeHtml(memberName(expense.paid_by))} - ${formatDate(expense.spent_at)}</span>
+          <span>Оплатил ${escapeHtml(memberName(expense.paid_by))} - ${formatDate(expense.spent_at)}</span>
         </div>
         <div class="toolbar">
           <strong>${formatMoney(expense.amount_cents, expense.currency || group.currency)}</strong>
-          <button class="icon-button danger" type="button" data-action="delete-expense" data-expense-id="${escapeAttribute(expense.id)}" title="Delete expense" aria-label="Delete expense">${icon("trash")}</button>
+          <button class="icon-button danger" type="button" data-action="delete-expense" data-expense-id="${escapeAttribute(expense.id)}" title="Удалить расход" aria-label="Удалить расход">${icon("trash")}</button>
         </div>
       </div>
       <div class="split-chips">
@@ -759,51 +780,51 @@ function renderExpenseForm(group) {
   const today = todayISO();
 
   return `
-    <section class="panel">
+    <section class="panel action-card expense-action">
       <div class="panel-header">
         <div>
-          <h2>New expense</h2>
+          <h2>Добавить трату</h2>
           <p>${escapeHtml(group.currency)}</p>
         </div>
         ${icon("plus")}
       </div>
       <form id="expense-form">
         <div class="field">
-          <label for="expense-title">Title</label>
-          <input id="expense-title" name="title" placeholder="Dinner" required maxlength="140" />
+          <label for="expense-title">За что</label>
+          <input id="expense-title" name="title" placeholder="Ужин" required maxlength="140" />
         </div>
         <div class="two-fields">
           <div class="field">
-            <label for="expense-amount">Amount</label>
+            <label for="expense-amount">Сколько</label>
             <input id="expense-amount" name="amount" inputmode="decimal" placeholder="42.50" required />
           </div>
           <div class="field">
-            <label for="expense-date">Date</label>
+            <label for="expense-date">Дата</label>
             <input id="expense-date" name="spentAt" type="date" value="${today}" required />
           </div>
         </div>
         <div class="field">
-          <label for="expense-paid-by">Paid by</label>
+          <label for="expense-paid-by">Кто оплатил</label>
           <select id="expense-paid-by" name="paidBy" required>
             ${state.members.map((member) => `<option value="${escapeAttribute(member.user_id)}">${escapeHtml(memberName(member.user_id))}</option>`).join("")}
           </select>
         </div>
         <div class="field">
-          <span class="field-label">Split</span>
+          <span class="field-label">Как делим</span>
           <div class="segmented">
             <input id="split-equal" type="radio" name="splitMode" value="equal" checked />
-            <label for="split-equal">Equal</label>
+            <label for="split-equal">Поровну</label>
             <input id="split-manual" type="radio" name="splitMode" value="manual" />
-            <label for="split-manual">Manual</label>
+            <label for="split-manual">Вручную</label>
           </div>
         </div>
         <div id="split-editor" class="split-editor"></div>
         <div id="split-preview" class="split-preview"></div>
         <div class="field">
-          <label for="expense-notes">Notes</label>
+          <label for="expense-notes">Заметка</label>
           <textarea id="expense-notes" name="notes"></textarea>
         </div>
-        <button class="button primary" type="submit">${icon("check")}Save expense</button>
+        <button class="button primary" type="submit">${icon("check")}Добавить трату</button>
       </form>
     </section>
   `;
@@ -811,10 +832,10 @@ function renderExpenseForm(group) {
 
 function renderSettlementForm(group) {
   return `
-    <section class="panel" id="settlement-panel">
+    <section class="panel action-card settlement-action" id="settlement-panel">
       <div class="panel-header">
         <div>
-          <h2>Record payment</h2>
+          <h2>Записать перевод</h2>
           <p>${escapeHtml(group.currency)}</p>
         </div>
         ${icon("wallet")}
@@ -822,13 +843,13 @@ function renderSettlementForm(group) {
       <form id="settlement-form">
         <div class="two-fields">
           <div class="field">
-            <label for="settlement-from">From</label>
+            <label for="settlement-from">От кого</label>
             <select id="settlement-from" name="fromUser" required>
               ${state.members.map((member) => `<option value="${escapeAttribute(member.user_id)}">${escapeHtml(memberName(member.user_id))}</option>`).join("")}
             </select>
           </div>
           <div class="field">
-            <label for="settlement-to">To</label>
+            <label for="settlement-to">Кому</label>
             <select id="settlement-to" name="toUser" required>
               ${state.members.map((member) => `<option value="${escapeAttribute(member.user_id)}">${escapeHtml(memberName(member.user_id))}</option>`).join("")}
             </select>
@@ -836,15 +857,15 @@ function renderSettlementForm(group) {
         </div>
         <div class="two-fields">
           <div class="field">
-            <label for="settlement-amount">Amount</label>
+            <label for="settlement-amount">Сумма</label>
             <input id="settlement-amount" name="amount" inputmode="decimal" required />
           </div>
           <div class="field">
-            <label for="settlement-date">Date</label>
+            <label for="settlement-date">Дата</label>
             <input id="settlement-date" name="settledAt" type="date" value="${todayISO()}" required />
           </div>
         </div>
-        <button class="button secondary" type="submit">${icon("check")}Record</button>
+        <button class="button secondary" type="submit">${icon("check")}Записать</button>
       </form>
     </section>
   `;
@@ -852,11 +873,11 @@ function renderSettlementForm(group) {
 
 function renderSettlements(group) {
   return `
-    <section class="panel">
+    <section class="panel payments-history">
       <div class="panel-header">
         <div>
-          <h2>Payments</h2>
-          <p>${state.settlements.length} records</p>
+          <h2>История переводов</h2>
+          <p>${state.settlements.length} записей</p>
         </div>
         ${icon("receipt")}
       </div>
@@ -866,15 +887,15 @@ function renderSettlements(group) {
             .map(
               (settlement) => `
                 <div class="settlement-row">
-                  <span>${escapeHtml(memberName(settlement.from_user))} paid ${escapeHtml(memberName(settlement.to_user))}</span>
+                  <span>${escapeHtml(memberName(settlement.from_user))} перевел ${escapeHtml(memberName(settlement.to_user))}</span>
                   <div class="toolbar">
                     <strong>${formatMoney(settlement.amount_cents, settlement.currency || group.currency)}</strong>
-                    <button class="icon-button danger" type="button" data-action="delete-settlement" data-settlement-id="${escapeAttribute(settlement.id)}" title="Delete payment" aria-label="Delete payment">${icon("trash")}</button>
+                    <button class="icon-button danger" type="button" data-action="delete-settlement" data-settlement-id="${escapeAttribute(settlement.id)}" title="Удалить перевод" aria-label="Удалить перевод">${icon("trash")}</button>
                   </div>
                 </div>
               `,
             )
-            .join("") || `<div class="muted">No payments recorded.</div>`
+            .join("") || `<div class="muted">Переводов пока нет.</div>`
         }
       </div>
     </section>
