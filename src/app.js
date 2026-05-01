@@ -25,7 +25,7 @@ init().catch((error) => {
   app.innerHTML = `
     <main class="screen setup-screen">
       <section class="form-panel">
-        <h2>SplitFair</h2>
+        <h2>Туту-сплит</h2>
         <div class="error">${escapeHtml(readableError(error))}</div>
       </section>
     </main>
@@ -339,45 +339,59 @@ function renderAuth() {
   const joinCode = new URL(window.location.href).searchParams.get("join");
 
   app.innerHTML = `
-    <main class="screen auth-screen">
-      <section class="auth-grid">
-        ${renderBrandPanel()}
-        <form id="auth-form" class="form-panel">
-          <div class="panel-header">
-            <div>
-              <h2>Sign in</h2>
-              <p>${joinCode ? "This invite will open after sign-in." : "Google or magic link"}</p>
-            </div>
-            ${icon("mail")}
+    <main class="screen auth-screen travel-auth-screen">
+      <section class="tutu-hero">
+        <div class="tutu-hero-top">
+          <div class="brand-mark tutu-brand">
+            <span class="mark">ТС</span>
+            <span>Туту-сплит</span>
           </div>
-          <button class="button primary" type="button" data-action="google-sign-in">${icon("log-in")}Continue with Google</button>
-          <div class="auth-divider"><span>or</span></div>
-          <div class="field">
-            <label for="email">Email</label>
-            <input id="email" name="email" type="email" autocomplete="email" required />
-          </div>
-          <button class="button primary" type="submit">${icon("send")}Send link</button>
-          <button class="button ghost" type="button" data-action="change-config">${icon("settings")}Supabase settings</button>
+          <button class="button google-button" type="button" data-action="google-sign-in">${icon("log-in")}Войти через Google</button>
+        </div>
+        <div class="tutu-hero-copy">
+          <h1>Едете куда-то вместе с друзьями?</h1>
+          <p>Мы сделаем расчёты между вами в разы проще: добавляйте траты, делите расходы и сразу видьте, кто кому должен.</p>
+          ${joinCode ? `<span class="invite-note">После входа откроем приглашение в группу.</span>` : ""}
+        </div>
+        <div class="travel-card-grid" aria-hidden="true">
+          <article class="travel-card">
+            ${icon("plane")}
+            <strong>Билеты</strong>
+            <span>самолеты, поезда, автобусы</span>
+          </article>
+          <article class="travel-card">
+            ${icon("bed")}
+            <strong>Жилье</strong>
+            <span>отели, квартиры, хостелы</span>
+          </article>
+          <article class="travel-card">
+            ${icon("utensils")}
+            <strong>Еда</strong>
+            <span>кафе, продукты, ужины</span>
+          </article>
+          <article class="travel-card">
+            ${icon("car")}
+            <strong>Транспорт</strong>
+            <span>такси, аренда, бензин</span>
+          </article>
+        </div>
+        <div class="split-search-bar">
+          <span>Кто платил?</span>
+          <span>За что?</span>
+          <span>Сколько?</span>
+          <button class="button google-button" type="button" data-action="google-sign-in">${icon("log-in")}Начать</button>
+        </div>
+        <div class="auth-feedback">
           ${state.notice ? `<div class="notice">${escapeHtml(state.notice)}</div>` : ""}
           ${state.error ? `<div class="error">${escapeHtml(state.error)}</div>` : ""}
-        </form>
+        </div>
       </section>
     </main>
   `;
 
-  document.querySelector("#auth-form").addEventListener("submit", handleSignIn);
-  document
-    .querySelector("[data-action='google-sign-in']")
-    .addEventListener("click", handleGoogleSignIn);
-  document
-    .querySelector("[data-action='change-config']")
-    .addEventListener("click", () => {
-      localStorage.removeItem(CONFIG_STORAGE_KEY);
-      state.config = { supabaseUrl: "", supabasePublishableKey: "" };
-      state.notice = "";
-      state.error = "";
-      renderSetup();
-    });
+  document.querySelectorAll("[data-action='google-sign-in']").forEach((button) => {
+    button.addEventListener("click", handleGoogleSignIn);
+  });
 }
 
 function renderBrandPanel() {
@@ -385,45 +399,21 @@ function renderBrandPanel() {
     <section class="brand-panel">
       <div>
         <div class="brand-mark">
-          <span class="mark">SF</span>
-          <span>SplitFair</span>
+          <span class="mark">ТС</span>
+          <span>Туту-сплит</span>
         </div>
         <div class="brand-copy">
-          <h1>SplitFair</h1>
-          <p>Shared expenses, simple balances, and clean settlements for trips, flats, teams, and dinners.</p>
+          <h1>Туту-сплит</h1>
+          <p>Едете куда-то вместе с друзьями? Мы сделаем расчёты между вами в разы проще.</p>
         </div>
       </div>
       <div class="brand-stats">
-        <div><strong>0%</strong><span>backend code to host</span></div>
-        <div><strong>RLS</strong><span>row-level access</span></div>
-        <div><strong>Pages</strong><span>static deploy</span></div>
+        <div><strong>3</strong><span>шага до понятных долгов</span></div>
+        <div><strong>1</strong><span>ссылка для всей группы</span></div>
+        <div><strong>0</strong><span>ручных таблиц</span></div>
       </div>
     </section>
   `;
-}
-
-async function handleSignIn(event) {
-  event.preventDefault();
-  const form = new FormData(event.currentTarget);
-  const email = normalizeText(form.get("email"));
-
-  try {
-    const redirectTo = getCurrentPageUrl();
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: redirectTo },
-    });
-
-    if (error) throw error;
-
-    state.notice = "Check your inbox.";
-    state.error = "";
-    renderAuth();
-  } catch (error) {
-    state.error = readableError(error);
-    state.notice = "";
-    renderAuth();
-  }
 }
 
 async function handleGoogleSignIn() {
@@ -451,8 +441,8 @@ function renderApp() {
       <header class="topbar">
         <div class="topbar-inner">
           <div class="brand-mark">
-            <span class="mark">SF</span>
-            <span>SplitFair</span>
+            <span class="mark">ТС</span>
+            <span>Туту-сплит</span>
           </div>
           <nav class="group-tabs" aria-label="Groups">
             ${state.groups.map(renderGroupTab).join("")}
@@ -1508,6 +1498,12 @@ function icon(name) {
       '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path>',
     mail:
       '<rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-10 5L2 7"></path>',
+    bed:
+      '<path d="M2 4v16"></path><path d="M2 10h20v10"></path><path d="M6 10V6h7a3 3 0 0 1 3 3v1"></path>',
+    car:
+      '<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18 10l-2-4H8l-2 4-2.5 1.1C2.7 11.3 2 12.1 2 13v3c0 .6.4 1 1 1h2"></path><circle cx="7" cy="17" r="2"></circle><circle cx="17" cy="17" r="2"></circle>',
+    plane:
+      '<path d="M17.8 19.2 16 13l5-5c1.5-1.5 1.5-3.5.6-4.4s-2.9-.9-4.4.6l-5 5-6.2-1.8-1.7 1.7 5.2 3.2-3 3 1.2 1.2 3-3 3.2 5.2Z"></path>',
     plus:
       '<path d="M5 12h14"></path><path d="M12 5v14"></path>',
     receipt:
@@ -1518,6 +1514,8 @@ function icon(name) {
       '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z"></path><circle cx="12" cy="12" r="3"></circle>',
     trash:
       '<path d="M3 6h18"></path><path d="M8 6V4c0-1 .7-2 2-2h4c1.3 0 2 1 2 2v2"></path><path d="M19 6v14c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path>',
+    utensils:
+      '<path d="M4 3v8"></path><path d="M8 3v8"></path><path d="M4 7h4"></path><path d="M6 11v10"></path><path d="M18 3c-2 2-3 4.2-3 7v3h4v8"></path>',
     user:
       '<path d="M19 21a7 7 0 0 0-14 0"></path><circle cx="12" cy="7" r="4"></circle>',
     users:

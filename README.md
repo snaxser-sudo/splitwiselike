@@ -1,11 +1,11 @@
-# SplitFair
+# Туту-сплит
 
 Static Splitwise-style web app for GitHub Pages with Supabase Auth, Postgres,
 RLS, and RPC-backed writes.
 
 ## What Is Included
 
-- Google OAuth and email magic-link sign-in.
+- Google OAuth sign-in.
 - Groups with invite links.
 - Shared expenses with equal or manual splits.
 - Simplified "who pays whom" balances.
