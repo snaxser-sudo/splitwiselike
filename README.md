@@ -5,7 +5,7 @@ RLS, and RPC-backed writes.
 
 ## What Is Included
 
-- Email magic-link sign-in.
+- Google OAuth and email magic-link sign-in.
 - Groups with invite links.
 - Shared expenses with equal or manual splits.
 - Simplified "who pays whom" balances.
@@ -44,6 +44,25 @@ RLS, and RPC-backed writes.
 
 The publishable key is safe to expose in a browser app when RLS is enabled.
 Never put a secret key or service role key into this repo.
+
+## Google Login
+
+1. In Google Cloud, create an OAuth client ID with type `Web application`.
+2. Add authorized JavaScript origins:
+
+   ```text
+   https://YOUR_GITHUB_USER.github.io
+   http://localhost:4173
+   ```
+
+3. Add the Supabase callback URL as an authorized redirect URI:
+
+   ```text
+   https://YOUR_PROJECT.supabase.co/auth/v1/callback
+   ```
+
+4. In Supabase, open `Authentication` -> `Sign In / Providers` -> `Google`.
+5. Enable Google and paste the Google Client ID and Client Secret.
 
 ## Run Locally
 

@@ -346,10 +346,12 @@ function renderAuth() {
           <div class="panel-header">
             <div>
               <h2>Sign in</h2>
-              <p>${joinCode ? "This invite will open after sign-in." : "Magic link by email"}</p>
+              <p>${joinCode ? "This invite will open after sign-in." : "Google or magic link"}</p>
             </div>
             ${icon("mail")}
           </div>
+          <button class="button primary" type="button" data-action="google-sign-in">${icon("log-in")}Continue with Google</button>
+          <div class="auth-divider"><span>or</span></div>
           <div class="field">
             <label for="email">Email</label>
             <input id="email" name="email" type="email" autocomplete="email" required />
@@ -364,6 +366,9 @@ function renderAuth() {
   `;
 
   document.querySelector("#auth-form").addEventListener("submit", handleSignIn);
+  document
+    .querySelector("[data-action='google-sign-in']")
+    .addEventListener("click", handleGoogleSignIn);
   document
     .querySelector("[data-action='change-config']")
     .addEventListener("click", () => {
@@ -414,6 +419,23 @@ async function handleSignIn(event) {
     state.notice = "Check your inbox.";
     state.error = "";
     renderAuth();
+  } catch (error) {
+    state.error = readableError(error);
+    state.notice = "";
+    renderAuth();
+  }
+}
+
+async function handleGoogleSignIn() {
+  try {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: getCurrentPageUrl(),
+      },
+    });
+
+    if (error) throw error;
   } catch (error) {
     state.error = readableError(error);
     state.notice = "";
