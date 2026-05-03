@@ -1358,6 +1358,75 @@ a {
 
   .workspace {
     padding: 14px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .settlement-page {
+    order: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .content-column,
+  .action-column {
+    display: contents;
+  }
+
+  .expense-action {
+    order: 1;
+  }
+
+  .workspace-feedback {
+    order: 2;
+  }
+
+  .trip-hero {
+    order: 3;
+  }
+
+  .settlement-summary {
+    order: 4;
+  }
+
+  .members-panel {
+    order: 5;
+  }
+
+  .settle-board {
+    order: 6;
+  }
+
+  .expenses-board {
+    order: 7;
+  }
+
+  .settlement-action {
+    order: 8;
+  }
+
+  .payments-history {
+    order: 9;
+  }
+
+  .sidebar {
+    order: 2;
+  }
+
+  .profile-panel {
+    order: 1;
+  }
+
+  .join-panel {
+    order: 2;
+  }
+
+  .new-group-panel {
+    order: 3;
+  }
+
+  .groups-panel {
+    order: 4;
   }
 
   .hero-row,

@@ -502,7 +502,7 @@ function renderGroupSelect() {
 
 function renderGroupsPanel() {
   return `
-    <section class="panel">
+    <section class="panel groups-panel">
       <div class="panel-header">
         <div>
           <h2>Поездки</h2>
@@ -514,7 +514,7 @@ function renderGroupsPanel() {
         ${state.groups.map(renderGroupListItem).join("") || `<div class="muted">Пока нет групп.</div>`}
       </div>
     </section>
-    <section class="panel">
+    <section class="panel new-group-panel">
       <div class="panel-header">
         <div>
           <h2>Новая поездка</h2>
@@ -536,7 +536,7 @@ function renderGroupsPanel() {
         <button class="button primary" type="submit">${icon("plus")}Создать</button>
       </form>
     </section>
-    <section class="panel">
+    <section class="panel join-panel">
       <div class="panel-header">
         <div>
           <h2>Присоединиться</h2>
@@ -571,7 +571,7 @@ function renderGroupListItem(group) {
 
 function renderProfilePanel() {
   return `
-    <section class="panel">
+    <section class="panel profile-panel">
       <div class="panel-header">
         <div>
           <h2>Профиль</h2>
@@ -627,7 +627,7 @@ function renderFeedback() {
   if (!state.notice && !state.error) return "";
 
   return `
-    <div>
+    <div class="workspace-feedback">
       ${state.notice ? `<div class="notice">${escapeHtml(state.notice)}</div>` : ""}
       ${state.error ? `<div class="error">${escapeHtml(state.error)}</div>` : ""}
     </div>
