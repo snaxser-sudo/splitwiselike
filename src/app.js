@@ -147,7 +147,7 @@ async function ensureProfile() {
       user.user_metadata?.full_name ||
       user.user_metadata?.name ||
       user.email?.split("@")[0] ||
-      "New user";
+      "Новый участник";
 
     const { data: inserted, error: insertError } = await supabase
       .from("profiles")
@@ -177,7 +177,7 @@ async function consumeInviteFromUrl() {
 
   url.searchParams.delete("join");
   window.history.replaceState({}, document.title, url.toString());
-  state.notice = "Invite accepted.";
+  state.notice = "Приглашение принято.";
   return data;
 }
 
@@ -301,20 +301,20 @@ function renderSetup() {
         <form id="config-form" class="form-panel">
           <div class="panel-header">
             <div>
-              <h2>Supabase</h2>
-              <p>URL and publishable key</p>
+              <h2>Подключение Supabase</h2>
+              <p>URL проекта и publishable key</p>
             </div>
             ${icon("settings")}
           </div>
           <div class="field">
-            <label for="supabase-url">Project URL</label>
+            <label for="supabase-url">URL проекта</label>
             <input id="supabase-url" name="supabaseUrl" type="url" placeholder="https://..." required />
           </div>
           <div class="field">
             <label for="supabase-key">Publishable key</label>
             <input id="supabase-key" name="supabasePublishableKey" type="password" autocomplete="off" required />
           </div>
-          <button class="button primary" type="submit">${icon("check")}Connect</button>
+          <button class="button primary" type="submit">${icon("check")}Подключить</button>
           ${state.error ? `<div class="error">${escapeHtml(state.error)}</div>` : ""}
         </form>
       </section>
@@ -506,26 +506,26 @@ function renderGroupsPanel() {
       <div class="panel-header">
         <div>
           <h2>Поездки</h2>
-          <p>${state.groups.length} активных</p>
+          <p>${state.groups.length ? `${state.groups.length} активных` : "Создайте первый маршрут"}</p>
         </div>
-        ${icon("users")}
+        ${icon("plane")}
       </div>
       <div class="group-list">
-        ${state.groups.map(renderGroupListItem).join("") || `<div class="muted">Пока нет групп.</div>`}
+        ${state.groups.map(renderGroupListItem).join("") || `<div class="side-empty">Пока нет поездок.</div>`}
       </div>
     </section>
     <section class="panel new-group-panel">
       <div class="panel-header">
         <div>
           <h2>Новая поездка</h2>
-          <p>Общая валюта</p>
+          <p>Название и общая валюта</p>
         </div>
         ${icon("plus")}
       </div>
       <form id="group-form">
         <div class="field">
           <label for="group-name">Название</label>
-          <input id="group-name" name="name" placeholder="Поездка в Казань" required maxlength="80" />
+          <input id="group-name" name="name" placeholder="Стамбул на майские" required maxlength="80" />
         </div>
         <div class="field">
           <label for="group-currency">Валюта</label>
@@ -547,7 +547,7 @@ function renderGroupsPanel() {
       <form id="join-form">
         <div class="field">
           <label for="invite-code">Код</label>
-          <input id="invite-code" name="inviteCode" autocomplete="off" required />
+          <input id="invite-code" name="inviteCode" placeholder="Например, a1b2c3" autocomplete="off" required />
         </div>
         <button class="button secondary" type="submit">${icon("log-in")}Войти</button>
       </form>
@@ -559,29 +559,37 @@ function renderGroupListItem(group) {
   const active = group.id === state.selectedGroupId ? "active" : "";
 
   return `
-    <button class="${active}" type="button" data-action="select-group" data-group-id="${escapeAttribute(group.id)}">
-      <span>
-        <strong>${escapeHtml(group.name)}</strong>
-        <span>${escapeHtml(group.currency)}</span>
+    <button class="trip-list-item ${active}" type="button" data-action="select-group" data-group-id="${escapeAttribute(group.id)}">
+      <span class="trip-list-main">
+        <span class="trip-list-icon">${icon("plane")}</span>
+        <span>
+          <strong>${escapeHtml(group.name)}</strong>
+          <span>Маршрут в ${escapeHtml(group.currency)}</span>
+        </span>
       </span>
-      ${icon("chevron-right")}
+      <span class="trip-list-currency">
+        <span>${escapeHtml(group.currency)}</span>
+        ${icon("chevron-right")}
+      </span>
     </button>
   `;
 }
 
 function renderProfilePanel() {
+  const displayName = state.profile?.display_name || state.session?.user?.email || "";
+
   return `
     <section class="panel profile-panel">
-      <div class="panel-header">
+      <div class="profile-card-head">
+        <span class="profile-avatar">${escapeHtml(initials(displayName || "ТС"))}</span>
         <div>
           <h2>Профиль</h2>
           <p>${escapeHtml(state.session?.user?.email || "")}</p>
         </div>
-        ${icon("user")}
       </div>
       <form id="profile-form">
         <div class="field">
-          <label for="display-name">Имя</label>
+          <label for="display-name">Имя в поездках</label>
           <input id="display-name" name="displayName" value="${escapeAttribute(state.profile?.display_name || "")}" required maxlength="80" />
         </div>
         <button class="button secondary" type="submit">${icon("check")}Сохранить</button>
@@ -592,10 +600,11 @@ function renderProfilePanel() {
 
 function renderEmptyWorkspace() {
   return `
-    <section class="empty-state">
+    <section class="empty-state empty-workspace">
       <div>
+        <span class="empty-icon">${icon("plane")}</span>
         <h2>Выберите поездку</h2>
-        <p>Создайте группу или присоединитесь по коду приглашения.</p>
+        <p>Создайте маршрут или присоединитесь по коду приглашения, чтобы начать делить расходы.</p>
       </div>
     </section>
   `;
@@ -641,12 +650,12 @@ function renderGroupHero(group) {
     <section class="group-hero trip-hero">
       <div class="hero-row trip-hero-row">
         <div class="trip-hero-copy">
-          <span class="eyebrow">Взаиморасчеты</span>
+          <span class="eyebrow">${icon("plane")}Маршрут поездки</span>
           <h1>${escapeHtml(group.name)}</h1>
-          <p>Все расходы, участники и переводы в одном маршруте.</p>
+          <p>Добавляйте общие траты, отмечайте переводы и сразу видьте, как закрыть долги без лишней математики.</p>
         </div>
         <div class="invite-box trip-invite-card">
-          <span>Код приглашения</span>
+          <span>Приглашение в поездку</span>
           <strong class="code" title="${escapeAttribute(inviteUrl)}">${escapeHtml(group.invite_code)}</strong>
           <button class="button secondary" type="button" data-action="copy-invite" data-invite-url="${escapeAttribute(inviteUrl)}" title="Скопировать приглашение" aria-label="Скопировать приглашение">${icon("copy")}Скопировать</button>
         </div>
@@ -669,19 +678,19 @@ function renderSummary(group, stats) {
   return `
     <section class="summary-grid settlement-summary">
       <div class="summary-tile neutral">
-        <span>Всего потрачено</span>
+        <span>${icon("receipt")}Всего потрачено</span>
         <strong>${formatMoney(stats.totalSpent, group.currency)}</strong>
-        <small>по всем расходам</small>
+        <small>по всем расходам поездки</small>
       </div>
       <div class="summary-tile ${balanceClass}">
-        <span>${balanceLabel}</span>
+        <span>${icon("wallet")}${balanceLabel}</span>
         <strong>${formatMoney(Math.abs(balance), group.currency)}</strong>
         <small>ваш личный баланс</small>
       </div>
-      <div class="summary-tile neutral">
-        <span>Нужно переводов</span>
+      <div class="summary-tile neutral alt">
+        <span>${icon("send")}Нужно переводов</span>
         <strong>${stats.debts.length}</strong>
-        <small>после упрощения</small>
+        <small>после упрощения долгов</small>
       </div>
     </section>
   `;
@@ -692,8 +701,8 @@ function renderMembers() {
     <section class="panel members-panel">
       <div class="panel-header">
         <div>
-          <h2>Участники</h2>
-          <p>${state.members.length} человек</p>
+          <h2>Попутчики</h2>
+          <p>${state.members.length} человек в поездке</p>
         </div>
         ${icon("users")}
       </div>
@@ -720,8 +729,8 @@ function renderDebts(group, debts) {
     <section class="panel settle-board">
       <div class="panel-header">
         <div>
-          <h2>Кто кому переводит</h2>
-          <p>${debts.length ? "Сводим все расходы к минимуму переводов" : "Все уже в расчете"}</p>
+          <h2>Взаиморасчеты</h2>
+          <p>${debts.length ? "Минимальный набор переводов" : "Все уже в расчете"}</p>
         </div>
         ${icon("wallet")}
       </div>
@@ -737,7 +746,7 @@ function renderDebts(group, debts) {
                       <strong>${escapeHtml(memberName(debt.from))}</strong>
                       <span>переводит</span>
                     </div>
-                    <span class="transfer-arrow">&rarr;</span>
+                    <span class="transfer-arrow">${icon("send")}</span>
                     <span class="mini-avatar">${escapeHtml(initials(memberName(debt.to)))}</span>
                     <div>
                       <strong>${escapeHtml(memberName(debt.to))}</strong>
@@ -754,7 +763,7 @@ function renderDebts(group, debts) {
               `,
             )
             .join("") ||
-          `<div class="empty-state"><div><h3>Все в расчете</h3><p>Сейчас никому ничего переводить не нужно.</p></div></div>`
+          `<div class="empty-state inline-empty"><div><span class="empty-icon">${icon("check")}</span><h3>Все в расчете</h3><p>Сейчас никому ничего переводить не нужно.</p></div></div>`
         }
       </div>
     </section>
@@ -767,12 +776,12 @@ function renderExpenses(group) {
       <div class="panel-header">
         <div>
           <h2>Лента расходов</h2>
-          <p>${state.expenses.length} записей</p>
+          <p>${state.expenses.length ? `${state.expenses.length} записей` : "Пока пусто"}</p>
         </div>
         ${icon("receipt")}
       </div>
       <div class="expense-list">
-        ${state.expenses.map((expense) => renderExpenseItem(expense, group)).join("") || `<div class="empty-state"><div><h3>Расходов пока нет</h3><p>Добавьте первую общую трату.</p></div></div>`}
+        ${state.expenses.map((expense) => renderExpenseItem(expense, group)).join("") || `<div class="empty-state inline-empty"><div><span class="empty-icon">${icon("receipt")}</span><h3>Расходов пока нет</h3><p>Добавьте первую общую трату.</p></div></div>`}
       </div>
     </section>
   `;
@@ -787,7 +796,7 @@ function renderExpenseItem(expense, group) {
         <span class="expense-ticket-icon">${icon("receipt")}</span>
         <div class="expense-title">
           <strong>${escapeHtml(expense.title)}</strong>
-          <span>Оплатил ${escapeHtml(memberName(expense.paid_by))} - ${formatDate(expense.spent_at)}</span>
+          <span>Оплатил ${escapeHtml(memberName(expense.paid_by))} • ${formatDate(expense.spent_at)}</span>
         </div>
         <div class="toolbar">
           <strong>${formatMoney(expense.amount_cents, expense.currency || group.currency)}</strong>
@@ -809,14 +818,14 @@ function renderExpenseForm(group) {
       <div class="panel-header">
         <div>
           <h2>Добавить трату</h2>
-          <p>${escapeHtml(group.currency)}</p>
+          <p>Быстрая запись в ${escapeHtml(group.currency)}</p>
         </div>
         ${icon("plus")}
       </div>
       <form id="expense-form">
         <div class="field">
           <label for="expense-title">За что</label>
-          <input id="expense-title" name="title" placeholder="Ужин" required maxlength="140" />
+          <input id="expense-title" name="title" placeholder="Отель у моря" required maxlength="140" />
         </div>
         <div class="two-fields">
           <div class="field">
@@ -847,7 +856,7 @@ function renderExpenseForm(group) {
         <div id="split-preview" class="split-preview"></div>
         <div class="field">
           <label for="expense-notes">Заметка</label>
-          <textarea id="expense-notes" name="notes"></textarea>
+          <textarea id="expense-notes" name="notes" placeholder="Например, бронь на две ночи"></textarea>
         </div>
         <button class="button primary" type="submit">${icon("check")}Добавить трату</button>
       </form>
@@ -861,7 +870,7 @@ function renderSettlementForm(group) {
       <div class="panel-header">
         <div>
           <h2>Записать перевод</h2>
-          <p>${escapeHtml(group.currency)}</p>
+          <p>Закрываем долг в ${escapeHtml(group.currency)}</p>
         </div>
         ${icon("wallet")}
       </div>
@@ -883,7 +892,7 @@ function renderSettlementForm(group) {
         <div class="two-fields">
           <div class="field">
             <label for="settlement-amount">Сумма</label>
-            <input id="settlement-amount" name="amount" inputmode="decimal" required />
+            <input id="settlement-amount" name="amount" inputmode="decimal" placeholder="25.00" required />
           </div>
           <div class="field">
             <label for="settlement-date">Дата</label>
@@ -901,18 +910,30 @@ function renderSettlements(group) {
     <section class="panel payments-history">
       <div class="panel-header">
         <div>
-          <h2>История переводов</h2>
-          <p>${state.settlements.length} записей</p>
+          <h2>Лента переводов</h2>
+          <p>${state.settlements.length ? `${state.settlements.length} записей` : "Переводов пока нет"}</p>
         </div>
-        ${icon("receipt")}
+        ${icon("send")}
       </div>
       <div class="settlement-list">
         ${
           state.settlements
             .map(
               (settlement) => `
-                <div class="settlement-row">
-                  <span>${escapeHtml(memberName(settlement.from_user))} перевел ${escapeHtml(memberName(settlement.to_user))}</span>
+                <div class="settlement-row payment-ticket">
+                  <div class="payment-route">
+                    <span class="mini-avatar">${escapeHtml(initials(memberName(settlement.from_user)))}</span>
+                    <div>
+                      <strong>${escapeHtml(memberName(settlement.from_user))}</strong>
+                      <span>${formatDate(settlement.settled_at)}</span>
+                    </div>
+                    <span class="transfer-arrow">${icon("send")}</span>
+                    <span class="mini-avatar">${escapeHtml(initials(memberName(settlement.to_user)))}</span>
+                    <div>
+                      <strong>${escapeHtml(memberName(settlement.to_user))}</strong>
+                      <span>получил перевод</span>
+                    </div>
+                  </div>
                   <div class="toolbar">
                     <strong>${formatMoney(settlement.amount_cents, settlement.currency || group.currency)}</strong>
                     <button class="icon-button danger" type="button" data-action="delete-settlement" data-settlement-id="${escapeAttribute(settlement.id)}" title="Удалить перевод" aria-label="Удалить перевод">${icon("trash")}</button>
@@ -920,7 +941,7 @@ function renderSettlements(group) {
                 </div>
               `,
             )
-            .join("") || `<div class="muted">Переводов пока нет.</div>`
+            .join("") || `<div class="empty-state inline-empty"><div><span class="empty-icon">${icon("send")}</span><h3>Переводов пока нет</h3><p>Запишите перевод, когда кто-то закроет долг.</p></div></div>`
         }
       </div>
     </section>
@@ -998,7 +1019,7 @@ async function handleCreateGroup(event) {
 
     if (error) throw error;
 
-    state.notice = "Group created.";
+    state.notice = "Поездка создана.";
     state.error = "";
     await loadWorkspace(data.id);
     renderApp();
@@ -1019,7 +1040,7 @@ async function handleJoinGroup(event) {
 
     if (error) throw error;
 
-    state.notice = "Group joined.";
+    state.notice = "Вы присоединились к поездке.";
     state.error = "";
     await loadWorkspace(data);
     renderApp();
@@ -1044,7 +1065,7 @@ async function handleProfileSave(event) {
     if (error) throw error;
 
     state.profile = data;
-    state.notice = "Profile saved.";
+    state.notice = "Профиль сохранен.";
     state.error = "";
     await loadWorkspace(state.selectedGroupId);
     renderApp();
@@ -1060,12 +1081,12 @@ async function handleCreateExpense(event) {
 
   try {
     const amountCents = parseMoneyToCents(form.get("amount"));
-    if (amountCents <= 0) throw new Error("Amount must be greater than zero.");
+    if (amountCents <= 0) throw new Error("Сумма должна быть больше нуля.");
 
     const splits = readSplitsFromForm(amountCents);
     const splitTotal = splits.reduce((sum, split) => sum + split.share_cents, 0);
 
-    if (!splits.length) throw new Error("Choose at least one participant.");
+    if (!splits.length) throw new Error("Выберите хотя бы одного участника.");
     if (splitTotal !== amountCents) {
       const difference = amountCents - splitTotal;
       const currency = group?.currency || "USD";
@@ -1089,7 +1110,7 @@ async function handleCreateExpense(event) {
 
     if (error) throw error;
 
-    state.notice = "Expense saved.";
+    state.notice = "Трата добавлена.";
     state.error = "";
     await loadWorkspace(group.id);
     renderApp();
@@ -1106,7 +1127,7 @@ async function handleCreateSettlement(event) {
   try {
     const amountCents = parseMoneyToCents(form.get("amount"));
 
-    if (amountCents <= 0) throw new Error("Amount must be greater than zero.");
+    if (amountCents <= 0) throw new Error("Сумма должна быть больше нуля.");
 
     const { error } = await supabase.rpc("create_settlement", {
       p_group_id: group.id,
@@ -1119,7 +1140,7 @@ async function handleCreateSettlement(event) {
 
     if (error) throw error;
 
-    state.notice = "Payment recorded.";
+    state.notice = "Перевод записан.";
     state.error = "";
     await loadWorkspace(group.id);
     renderApp();
@@ -1129,13 +1150,13 @@ async function handleCreateSettlement(event) {
 }
 
 async function deleteExpense(expenseId) {
-  if (!window.confirm("Delete this expense?")) return;
+  if (!window.confirm("Удалить эту трату?")) return;
 
   try {
     const { error } = await supabase.from("expenses").delete().eq("id", expenseId);
     if (error) throw error;
 
-    state.notice = "Expense deleted.";
+    state.notice = "Трата удалена.";
     state.error = "";
     await loadWorkspace(state.selectedGroupId);
     renderApp();
@@ -1145,7 +1166,7 @@ async function deleteExpense(expenseId) {
 }
 
 async function deleteSettlement(settlementId) {
-  if (!window.confirm("Delete this payment?")) return;
+  if (!window.confirm("Удалить этот перевод?")) return;
 
   try {
     const { error } = await supabase
@@ -1155,7 +1176,7 @@ async function deleteSettlement(settlementId) {
 
     if (error) throw error;
 
-    state.notice = "Payment deleted.";
+    state.notice = "Перевод удален.";
     state.error = "";
     await loadWorkspace(state.selectedGroupId);
     renderApp();
@@ -1277,9 +1298,12 @@ function updateSplitPreview() {
         : formatMoney(0, getSelectedGroup()?.currency || "USD");
     });
 
+    preview.className = selected.length
+      ? "split-preview balanced"
+      : "split-preview mismatch";
     preview.textContent = selected.length
-      ? `${selected.length} participants`
-      : "No participants selected";
+      ? `Поровну между участниками: ${selected.length}`
+      : "Выберите хотя бы одного участника";
     return;
   }
 
@@ -1294,7 +1318,14 @@ function updateSplitPreview() {
     0,
   );
 
-  preview.textContent = `Manual total: ${formatMoney(manualTotal, getSelectedGroup()?.currency || "USD")}`;
+  const currency = getSelectedGroup()?.currency || "USD";
+  const difference = amountCents - manualTotal;
+  preview.className = difference === 0
+    ? "split-preview balanced"
+    : "split-preview mismatch";
+  preview.textContent = difference === 0
+    ? `Ручная сумма сошлась: ${formatMoney(manualTotal, currency)}`
+    : `Ручная сумма: ${formatMoney(manualTotal, currency)}. ${difference > 0 ? "Не хватает" : "Лишние"} ${formatMoney(Math.abs(difference), currency)}.`;
 }
 
 function readSplitsFromForm(amountCents) {
@@ -1338,7 +1369,7 @@ async function handleCopyInvite(event) {
 
   try {
     await navigator.clipboard.writeText(inviteUrl);
-    state.notice = "Invite copied.";
+    state.notice = "Приглашение скопировано.";
     state.error = "";
     renderApp();
   } catch (error) {
@@ -1454,7 +1485,7 @@ function getSelectedGroup() {
 
 function memberName(userId) {
   const member = state.members.find((item) => item.user_id === userId);
-  return member?.profile?.display_name || `User ${String(userId).slice(0, 8)}`;
+  return member?.profile?.display_name || `Участник ${String(userId).slice(0, 8)}`;
 }
 
 function initials(value) {
@@ -1482,7 +1513,7 @@ function parseMoneyToCents(value) {
 
   if (!raw) return 0;
   if (!/^\d+(\.\d{0,2})?$/.test(raw)) {
-    throw new Error("Use a valid money amount, for example 12.50.");
+    throw new Error("Введите корректную сумму, например 12.50.");
   }
 
   const [whole, fraction = ""] = raw.split(".");
@@ -1495,7 +1526,7 @@ function centsToInput(cents) {
 
 function formatMoney(cents, currency) {
   try {
-    return new Intl.NumberFormat(undefined, {
+    return new Intl.NumberFormat("ru-RU", {
       style: "currency",
       currency,
     }).format(Number(cents || 0) / 100);
@@ -1506,7 +1537,7 @@ function formatMoney(cents, currency) {
 
 function formatDate(value) {
   if (!value) return "";
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat("ru-RU", {
     month: "short",
     day: "numeric",
     year: "numeric",
