@@ -820,7 +820,7 @@ function renderExpenseForm(group) {
           <h2>Добавить трату</h2>
           <p>Быстрая запись в ${escapeHtml(group.currency)}</p>
         </div>
-        ${icon("plus")}
+        ${icon("receipt")}
       </div>
       <form id="expense-form">
         <div class="field">
