@@ -447,6 +447,7 @@ function renderApp() {
           <nav class="group-tabs" aria-label="Группы">
             ${state.groups.map(renderGroupTab).join("")}
           </nav>
+          ${renderGroupSelect()}
           <div class="account-menu">
             <span class="avatar" title="${escapeAttribute(state.profile?.display_name || "Аккаунт")}">${escapeHtml(initials(state.profile?.display_name || state.session?.user?.email || "U"))}</span>
             <button class="icon-button" data-action="sign-out" title="Выйти" aria-label="Выйти">${icon("log-out")}</button>
@@ -472,6 +473,30 @@ function renderGroupTab(group) {
     <button class="tab ${active}" type="button" data-action="select-group" data-group-id="${escapeAttribute(group.id)}">
       ${escapeHtml(group.name)}
     </button>
+  `;
+}
+
+function renderGroupSelect() {
+  if (!state.groups.length) {
+    return `
+      <select class="group-select" aria-label="Выбрать поездку" disabled>
+        <option>Нет поездок</option>
+      </select>
+    `;
+  }
+
+  return `
+    <select class="group-select" data-action="select-group-menu" aria-label="Выбрать поездку">
+      ${state.groups
+        .map(
+          (group) => `
+            <option value="${escapeAttribute(group.id)}" ${group.id === state.selectedGroupId ? "selected" : ""}>
+              ${escapeHtml(group.name)}
+            </option>
+          `,
+        )
+        .join("")}
+    </select>
   `;
 }
 
@@ -910,14 +935,12 @@ function bindAppEvents() {
     });
 
   document.querySelectorAll("[data-action='select-group']").forEach((button) => {
-    button.addEventListener("click", async () => {
-      state.selectedGroupId = button.dataset.groupId;
-      state.notice = "";
-      state.error = "";
-      await loadWorkspace(state.selectedGroupId);
-      renderApp();
-    });
+    button.addEventListener("click", () => selectGroup(button.dataset.groupId));
   });
+
+  document
+    .querySelector("[data-action='select-group-menu']")
+    ?.addEventListener("change", (event) => selectGroup(event.currentTarget.value));
 
   document
     .querySelector("[data-action='copy-invite']")
@@ -944,6 +967,20 @@ function bindAppEvents() {
     ?.addEventListener("submit", handleCreateSettlement);
 
   bindSplitEditor();
+}
+
+async function selectGroup(groupId) {
+  if (!groupId || groupId === state.selectedGroupId) return;
+
+  try {
+    state.selectedGroupId = groupId;
+    state.notice = "";
+    state.error = "";
+    await loadWorkspace(state.selectedGroupId);
+    renderApp();
+  } catch (error) {
+    showAppError(error);
+  }
 }
 
 async function handleCreateGroup(event) {
@@ -1030,7 +1067,13 @@ async function handleCreateExpense(event) {
 
     if (!splits.length) throw new Error("Choose at least one participant.");
     if (splitTotal !== amountCents) {
-      throw new Error("Split total must match the expense amount.");
+      const difference = amountCents - splitTotal;
+      const currency = group?.currency || "USD";
+      const direction = difference > 0 ? "не хватает" : "лишние";
+      window.alert(
+        `Сумма не сходится: ${direction} ${formatMoney(Math.abs(difference), currency)}. Проверьте ручное деление.`,
+      );
+      return;
     }
 
     const { error } = await supabase.rpc("create_expense", {

@@ -570,6 +570,10 @@ a {
   padding: 4px 0;
 }
 
+.group-select {
+  display: none;
+}
+
 .tab {
   max-width: 220px;
   min-height: 38px;
@@ -1335,8 +1339,21 @@ a {
   }
 
   .group-tabs {
+    display: none;
+  }
+
+  .group-select {
     grid-column: 1 / -1;
     order: 3;
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    padding: 9px 12px;
+    border: 1px solid #c9c1f5;
+    border-radius: var(--radius-sm);
+    background: #fff;
+    color: var(--tutu-navy);
+    font-weight: 850;
   }
 
   .workspace {
