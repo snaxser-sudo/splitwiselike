@@ -39,6 +39,10 @@
   box-sizing: border-box;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -48,6 +52,7 @@ body {
     linear-gradient(135deg, rgba(255, 122, 0, 0.08), transparent 42%),
     var(--bg);
   color: var(--ink);
+  overflow-x: hidden;
 }
 
 button,
@@ -557,6 +562,8 @@ a {
   min-height: 100vh;
   display: grid;
   grid-template-rows: auto 1fr;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .topbar {
@@ -1086,6 +1093,7 @@ a {
   max-width: 720px;
   color: #fff;
   font-size: 3.6rem;
+  overflow-wrap: anywhere;
 }
 
 .trip-hero p {
@@ -1093,6 +1101,7 @@ a {
   margin: 0;
   color: rgba(255, 255, 255, 0.9);
   font-size: 1.16rem;
+  overflow-wrap: anywhere;
 }
 
 .trip-invite-card {
@@ -1464,9 +1473,16 @@ a {
 }
 
 .toolbar {
+  min-width: 0;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+}
+
+.toolbar strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .hidden {
@@ -1596,6 +1612,45 @@ a {
 
   .groups-panel {
     order: 4;
+  }
+
+  .hero-row,
+  .expense-head,
+  .expense-ticket .expense-head,
+  .debt-item {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .trip-hero-row,
+  .transfer-card,
+  .transfer-route,
+  .payment-ticket,
+  .payment-route {
+    grid-template-columns: 1fr;
+  }
+
+  .trip-invite-card {
+    min-width: 0;
+  }
+
+  .expense-ticket::after {
+    display: none;
+  }
+
+  .expense-ticket .toolbar,
+  .payment-ticket .toolbar,
+  .transfer-side {
+    justify-items: stretch;
+    padding-left: 0;
+  }
+
+  .transfer-arrow {
+    transform: rotate(90deg);
+  }
+
+  .invite-box {
+    justify-content: start;
   }
 }
 
@@ -1746,26 +1801,6 @@ a {
     order: 4;
   }
 
-  .hero-row,
-  .expense-head,
-  .expense-ticket .expense-head,
-  .debt-item {
-    grid-template-columns: 1fr;
-    display: grid;
-  }
-
-  .trip-hero-row,
-  .transfer-card,
-  .transfer-route,
-  .payment-ticket,
-  .payment-route {
-    grid-template-columns: 1fr;
-  }
-
-  .trip-invite-card {
-    min-width: 0;
-  }
-
   .trip-hero h1 {
     font-size: 2.35rem;
   }
@@ -1774,24 +1809,6 @@ a {
     font-size: 1rem;
   }
 
-  .expense-ticket::after {
-    display: none;
-  }
-
-  .expense-ticket .toolbar,
-  .payment-ticket .toolbar,
-  .transfer-side {
-    justify-items: stretch;
-    padding-left: 0;
-  }
-
-  .transfer-arrow {
-    transform: rotate(90deg);
-  }
-
-  .invite-box {
-    justify-content: start;
-  }
 }
 
 @media (max-width: 520px) {
