@@ -864,6 +864,8 @@ function renderExpenseForm(group) {
           <div class="segmented">
             <input id="split-equal" type="radio" name="splitMode" value="equal" checked />
             <label for="split-equal">Поровну</label>
+            <input id="split-shares" type="radio" name="splitMode" value="shares" />
+            <label for="split-shares">По долям</label>
             <input id="split-manual" type="radio" name="splitMode" value="manual" />
             <label for="split-manual">Вручную</label>
           </div>
@@ -1127,7 +1129,7 @@ async function handleCreateExpense(event) {
       const currency = group?.currency || "USD";
       const direction = difference > 0 ? "не хватает" : "лишние";
       window.alert(
-        `Сумма не сходится: ${direction} ${formatMoney(Math.abs(difference), currency)}. Проверьте ручное деление.`,
+        `Сумма не сходится: ${direction} ${formatMoney(Math.abs(difference), currency)}. Проверьте деление.`,
       );
       return;
     }
@@ -1240,16 +1242,26 @@ function bindSplitEditor() {
         input.value,
       ]),
     );
+    const shareValues = new Map(
+      [...editor.querySelectorAll(".weighted-share")].map((input) => [
+        input.dataset.userId,
+        input.value,
+      ]),
+    );
 
     if (!checked.size && editor.dataset.mode !== "equal") {
       state.members.forEach((member) => checked.add(member.user_id));
     }
 
     editor.dataset.mode = mode;
-    editor.innerHTML =
-      mode === "manual"
-        ? renderManualSplitRows(manualValues)
-        : renderEqualSplitRows(checked);
+
+    if (mode === "manual") {
+      editor.innerHTML = renderManualSplitRows(manualValues);
+    } else if (mode === "shares") {
+      editor.innerHTML = renderWeightedSplitRows(shareValues);
+    } else {
+      editor.innerHTML = renderEqualSplitRows(checked);
+    }
 
     editor
       .querySelectorAll("input")
@@ -1306,6 +1318,24 @@ function renderManualSplitRows(values) {
     .join("");
 }
 
+function renderWeightedSplitRows(values) {
+  return state.members
+    .map((member) => {
+      const name = memberName(member.user_id);
+      const value = values.has(member.user_id) ? values.get(member.user_id) : "1";
+      return `
+        <div class="split-row">
+          <span class="split-person">
+            <span>${escapeHtml(name)}</span>
+            <span class="muted weighted-amount" data-user-id="${escapeAttribute(member.user_id)}"></span>
+          </span>
+          <input class="weighted-share" data-user-id="${escapeAttribute(member.user_id)}" type="text" inputmode="decimal" value="${escapeAttribute(value)}" aria-label="Доля для ${escapeAttribute(name)}" />
+        </div>
+      `;
+    })
+    .join("");
+}
+
 function updateSplitPreview() {
   const form = document.querySelector("#expense-form");
   const preview = document.querySelector("#split-preview");
@@ -1342,6 +1372,37 @@ function updateSplitPreview() {
     return;
   }
 
+  const currency = getSelectedGroup()?.currency || "USD";
+
+  if (form.elements.splitMode.value === "shares") {
+    let weightedSplits = [];
+    let totalWeight = 0;
+    let hasInvalidWeight = false;
+
+    try {
+      const weights = readWeightsFromForm();
+      totalWeight = weights.reduce((sum, item) => sum + item.weight, 0);
+      weightedSplits = splitByWeights(amountCents, weights);
+    } catch {
+      hasInvalidWeight = true;
+    }
+
+    document.querySelectorAll(".weighted-amount").forEach((node) => {
+      const split = weightedSplits.find((item) => item.user_id === node.dataset.userId);
+      node.textContent = split ? formatMoney(split.share_cents, currency) : "";
+    });
+
+    preview.className = weightedSplits.length && !hasInvalidWeight
+      ? "split-preview balanced"
+      : "split-preview mismatch";
+    preview.textContent = hasInvalidWeight
+      ? "Проверьте доли."
+      : weightedSplits.length
+        ? `Всего долей: ${formatWeight(totalWeight)}`
+        : "Укажите хотя бы одну долю";
+    return;
+  }
+
   const manualTotal = [...document.querySelectorAll(".manual-share")].reduce(
     (sum, input) => {
       try {
@@ -1353,7 +1414,6 @@ function updateSplitPreview() {
     0,
   );
 
-  const currency = getSelectedGroup()?.currency || "USD";
   const difference = amountCents - manualTotal;
   preview.className = difference === 0
     ? "split-preview balanced"
@@ -1372,6 +1432,10 @@ function readSplitsFromForm(amountCents) {
     ].map((input) => input.value);
 
     return splitEqually(amountCents, selected);
+  }
+
+  if (mode === "shares") {
+    return splitByWeights(amountCents, readWeightsFromForm());
   }
 
   return [...document.querySelectorAll(".manual-share")]
@@ -1397,6 +1461,68 @@ function splitEqually(amountCents, userIds) {
       share_cents: base + extra,
     };
   });
+}
+
+function readWeightsFromForm() {
+  return [...document.querySelectorAll(".weighted-share")]
+    .map((input) => ({
+      user_id: input.dataset.userId,
+      weight: parseWeight(input.value),
+    }))
+    .filter((item) => item.weight > 0);
+}
+
+function parseWeight(value) {
+  const raw = normalizeText(value).replace(",", ".");
+
+  if (!raw) return 0;
+  if (!/^\d+(\.\d+)?$/.test(raw)) {
+    throw new Error("Введите корректную долю, например 20.");
+  }
+
+  const weight = Number(raw);
+  if (!Number.isFinite(weight)) {
+    throw new Error("Введите корректную долю, например 20.");
+  }
+
+  return weight;
+}
+
+function splitByWeights(amountCents, weights) {
+  if (!weights.length) return [];
+
+  const totalWeight = weights.reduce((sum, item) => sum + item.weight, 0);
+  if (totalWeight <= 0) return [];
+
+  const shares = weights.map((item, index) => {
+    const exactShare = (amountCents * item.weight) / totalWeight;
+    return {
+      user_id: item.user_id,
+      share_cents: Math.floor(exactShare),
+      remainder: exactShare % 1,
+      index,
+    };
+  });
+  let remainderCents =
+    amountCents - shares.reduce((sum, item) => sum + item.share_cents, 0);
+
+  [...shares]
+    .sort((a, b) => b.remainder - a.remainder || a.index - b.index)
+    .forEach((item) => {
+      if (remainderCents <= 0) return;
+      item.share_cents += 1;
+      remainderCents -= 1;
+    });
+
+  return shares
+    .sort((a, b) => a.index - b.index)
+    .map(({ user_id, share_cents }) => ({ user_id, share_cents }));
+}
+
+function formatWeight(value) {
+  return new Intl.NumberFormat("ru-RU", {
+    maximumFractionDigits: 4,
+  }).format(Number(value || 0));
 }
 
 async function handleCopyInvite(event) {
