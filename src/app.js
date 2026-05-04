@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const CONFIG_STORAGE_KEY = "splitfair.supabase.config";
 const SELECTED_GROUP_KEY = "splitfair.selectedGroupId";
 const FEEDBACK_HIDE_DELAY_MS = 5000;
+const AUTH_ERROR_QUERY_PARAMS = ["error", "error_code", "error_description"];
 const app = document.querySelector("#app");
 
 let supabase = null;
@@ -42,6 +43,7 @@ async function init() {
     return;
   }
 
+  cleanAuthRedirectUrl();
   await initializeSupabase();
 }
 
@@ -1562,8 +1564,39 @@ function initials(value) {
 
 function getCurrentPageUrl() {
   const url = new URL(window.location.href);
+  removeAuthErrorParams(url);
   url.hash = "";
   return url.toString();
+}
+
+function cleanAuthRedirectUrl() {
+  const url = new URL(window.location.href);
+
+  if (!hasAuthSessionHash(url)) return;
+
+  const changed = removeAuthErrorParams(url);
+  if (changed) {
+    window.history.replaceState({}, document.title, url.toString());
+  }
+}
+
+function hasAuthSessionHash(url) {
+  const hash = url.hash.startsWith("#") ? url.hash.slice(1) : url.hash;
+  const params = new URLSearchParams(hash);
+  return params.has("access_token") || params.has("refresh_token");
+}
+
+function removeAuthErrorParams(url) {
+  let changed = false;
+
+  for (const param of AUTH_ERROR_QUERY_PARAMS) {
+    if (url.searchParams.has(param)) {
+      url.searchParams.delete(param);
+      changed = true;
+    }
+  }
+
+  return changed;
 }
 
 function getInviteUrl(inviteCode) {
