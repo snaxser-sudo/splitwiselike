@@ -1087,6 +1087,7 @@ a {
 }
 
 .trip-hero-copy {
+  min-width: 0;
   display: grid;
   align-content: center;
   gap: 14px;
@@ -1111,10 +1112,12 @@ a {
 }
 
 .trip-hero h1 {
-  max-width: 720px;
+  max-width: min(720px, 100%);
   color: #fff;
-  font-size: 3.6rem;
-  overflow-wrap: anywhere;
+  font-size: clamp(2.35rem, 5vw, 3.6rem);
+  line-height: 0.98;
+  text-wrap: balance;
+  overflow-wrap: break-word;
 }
 
 .trip-hero p {

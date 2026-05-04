@@ -2,10 +2,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CONFIG_STORAGE_KEY = "splitfair.supabase.config";
 const SELECTED_GROUP_KEY = "splitfair.selectedGroupId";
+const NOTICE_HIDE_DELAY_MS = 2000;
 const app = document.querySelector("#app");
 
 let supabase = null;
 let authSubscription = null;
+let noticeHideTimer = null;
 
 const state = {
   config: null,
@@ -1114,6 +1116,7 @@ async function handleCreateExpense(event) {
     state.error = "";
     await loadWorkspace(group.id);
     renderApp();
+    scheduleNoticeHide(state.notice);
   } catch (error) {
     showAppError(error);
   }
@@ -1477,6 +1480,21 @@ function showAppError(error) {
   state.error = readableError(error);
   state.notice = "";
   renderApp();
+}
+
+function scheduleNoticeHide(notice) {
+  if (noticeHideTimer) {
+    clearTimeout(noticeHideTimer);
+  }
+
+  noticeHideTimer = window.setTimeout(() => {
+    noticeHideTimer = null;
+
+    if (state.notice !== notice) return;
+
+    state.notice = "";
+    renderApp();
+  }, NOTICE_HIDE_DELAY_MS);
 }
 
 function getSelectedGroup() {
