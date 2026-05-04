@@ -4,7 +4,6 @@ const SUPABASE_AUTH_STORAGE_KEY = "splitfair.supabase.auth";
 const FEEDBACK_HIDE_DELAY_MS = 5000;
 const SUPABASE_MODULE_TIMEOUT_MS = 5000;
 const SUPABASE_STARTUP_TIMEOUT_MS = 10000;
-const SUPABASE_AUTH_REDIRECT_TIMEOUT_MS = 20000;
 const AUTH_DEBUG_LIMIT = 40;
 const SUPABASE_MODULE_URLS = [
   "https://esm.sh/@supabase/supabase-js@2",
@@ -198,20 +197,10 @@ async function readRedirectSession() {
     return null;
   }
 
-  const {
-    data: { session },
-    error,
-  } = await withTimeout(
-    supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    }),
-    SUPABASE_AUTH_REDIRECT_TIMEOUT_MS,
-    "Не удалось завершить вход. Попробуйте войти заново.",
-  );
+  const session = createSessionFromRedirectParams(params, accessToken, refreshToken);
+  persistAuthSession(session);
 
-  if (error) throw error;
-  recordAuthDebug("session:set-session", {
+  recordAuthDebug("session:stored-from-redirect", {
     hasSession: Boolean(session),
     hasUser: Boolean(session?.user),
     provider: session?.user?.app_metadata?.provider || "",
@@ -223,6 +212,65 @@ async function readRedirectSession() {
     location: safeLocationSnapshot(),
   });
   return session;
+}
+
+function createSessionFromRedirectParams(params, accessToken, refreshToken) {
+  const payload = decodeJwtPayload(accessToken);
+  const now = Math.floor(Date.now() / 1000);
+  const expiresAt = Number(params.get("expires_at") || payload.exp || 0);
+  const expiresIn = Number(params.get("expires_in") || Math.max(expiresAt - now, 0));
+
+  if (!payload.sub || !expiresAt || expiresAt <= now) {
+    throw new Error("Ссылка входа устарела. Попробуйте войти заново.");
+  }
+
+  const session = {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    expires_at: expiresAt,
+    expires_in: expiresIn,
+    token_type: params.get("token_type") || "bearer",
+    user: {
+      id: payload.sub,
+      aud: payload.aud || "authenticated",
+      role: payload.role || "authenticated",
+      email: payload.email || "",
+      phone: payload.phone || "",
+      app_metadata: payload.app_metadata || {},
+      user_metadata: payload.user_metadata || {},
+      is_anonymous: Boolean(payload.is_anonymous),
+    },
+  };
+
+  copyOptionalSessionParam(params, session, "provider_token");
+  copyOptionalSessionParam(params, session, "provider_refresh_token");
+
+  return session;
+}
+
+function copyOptionalSessionParam(params, session, key) {
+  const value = params.get(key);
+  if (value) session[key] = value;
+}
+
+function decodeJwtPayload(token) {
+  const [, payload] = String(token || "").split(".");
+
+  if (!payload) {
+    throw new Error("Не удалось прочитать токен входа.");
+  }
+
+  try {
+    const base64 = payload.replaceAll("-", "+").replaceAll("_", "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    return JSON.parse(window.atob(padded));
+  } catch {
+    throw new Error("Не удалось прочитать токен входа.");
+  }
+}
+
+function persistAuthSession(session) {
+  window.localStorage.setItem(SUPABASE_AUTH_STORAGE_KEY, JSON.stringify(session));
 }
 
 function clearAuthRedirectHash() {
