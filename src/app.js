@@ -2,6 +2,7 @@ const CONFIG_STORAGE_KEY = "splitfair.supabase.config";
 const SELECTED_GROUP_KEY = "splitfair.selectedGroupId";
 const FEEDBACK_HIDE_DELAY_MS = 5000;
 const SUPABASE_MODULE_TIMEOUT_MS = 5000;
+const SUPABASE_STARTUP_TIMEOUT_MS = 10000;
 const SUPABASE_MODULE_URLS = [
   "https://esm.sh/@supabase/supabase-js@2",
   "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm",
@@ -29,6 +30,11 @@ const state = {
 };
 
 init().catch((error) => {
+  renderStartupError(error);
+});
+
+function renderStartupError(error) {
+  app.classList.remove("app-loading");
   app.innerHTML = `
     <main class="screen setup-screen">
       <section class="form-panel">
@@ -37,7 +43,7 @@ init().catch((error) => {
       </section>
     </main>
   `;
-});
+}
 
 async function init() {
   state.config = readConfig();
@@ -70,14 +76,7 @@ async function initializeSupabase() {
     },
   );
 
-  const {
-    data: { session },
-    error,
-  } = await supabase.auth.getSession();
-
-  if (error) throw error;
-
-  state.session = session;
+  state.session = await readInitialSession();
 
   const { data } = supabase.auth.onAuthStateChange(async (_event, session) => {
     state.session = session;
@@ -101,17 +100,60 @@ async function initializeSupabase() {
   }
 }
 
-async function bootAuthenticated() {
+async function readInitialSession() {
   try {
-    await ensureProfile();
-    const joinedGroupId = await consumeInviteFromUrl();
-    await loadWorkspace(joinedGroupId);
-    renderApp();
+    const {
+      data: { session },
+      error,
+    } = await withTimeout(
+      supabase.auth.getSession(),
+      SUPABASE_STARTUP_TIMEOUT_MS,
+      "Не удалось проверить текущий вход. Можно попробовать войти заново.",
+    );
+
+    if (error) throw error;
+    return session;
   } catch (error) {
     state.error = readableError(error);
-    await loadWorkspace();
-    renderApp();
+    return null;
   }
+}
+
+async function bootAuthenticated() {
+  let joinedGroupId = null;
+
+  try {
+    await withTimeout(
+      ensureProfile(),
+      SUPABASE_STARTUP_TIMEOUT_MS,
+      "Не удалось загрузить профиль.",
+    );
+  } catch (error) {
+    state.error = readableError(error);
+  }
+
+  try {
+    joinedGroupId = await withTimeout(
+      consumeInviteFromUrl(),
+      SUPABASE_STARTUP_TIMEOUT_MS,
+      "Не удалось принять приглашение.",
+    );
+  } catch (error) {
+    state.error = readableError(error);
+  }
+
+  try {
+    await withTimeout(
+      loadWorkspace(joinedGroupId),
+      SUPABASE_STARTUP_TIMEOUT_MS,
+      "Не удалось загрузить поездки.",
+    );
+  } catch (error) {
+    state.error = readableError(error);
+    clearWorkspace();
+  }
+
+  renderApp();
 }
 
 async function loadSupabaseClient() {
@@ -146,6 +188,23 @@ async function importWithTimeout(url, timeoutMs) {
       new Promise((_, reject) => {
         timeoutId = window.setTimeout(() => {
           reject(new Error(`Timed out while loading ${new URL(url).hostname}.`));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) window.clearTimeout(timeoutId);
+  }
+}
+
+async function withTimeout(promise, timeoutMs, message) {
+  let timeoutId = null;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timeoutId = window.setTimeout(() => {
+          reject(new Error(message));
         }, timeoutMs);
       }),
     ]);
@@ -345,6 +404,7 @@ function groupByExpense(splits) {
 }
 
 function renderSetup() {
+  app.classList.remove("app-loading");
   app.innerHTML = `
     <main class="screen setup-screen">
       <section class="setup-grid">
@@ -389,6 +449,7 @@ function renderSetup() {
 function renderAuth() {
   const joinCode = getInviteCodeFromUrl();
 
+  app.classList.remove("app-loading");
   app.innerHTML = `
     <main class="screen auth-screen travel-auth-screen">
       <section class="tutu-hero">
@@ -471,12 +532,16 @@ function renderBrandPanel() {
 
 async function handleGoogleSignIn() {
   try {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: getCurrentPageUrl(),
-      },
-    });
+    const { error } = await withTimeout(
+      supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: getCurrentPageUrl(),
+        },
+      }),
+      SUPABASE_STARTUP_TIMEOUT_MS,
+      "Не удалось открыть вход через Google. Проверьте VPN или попробуйте другую сеть.",
+    );
 
     if (error) throw error;
   } catch (error) {
@@ -489,6 +554,7 @@ async function handleGoogleSignIn() {
 function renderApp() {
   const selectedGroup = getSelectedGroup();
 
+  app.classList.remove("app-loading");
   app.innerHTML = `
     <div class="app-shell">
       <header class="topbar">
