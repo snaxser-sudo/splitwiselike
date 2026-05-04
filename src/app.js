@@ -627,11 +627,11 @@ function renderGroupWorkspace(group) {
         ${renderGroupHero(group)}
         ${renderSummary(group, stats)}
         ${renderMembers()}
-        ${renderDebts(group, stats.debts)}
         ${renderExpenses(group)}
       </div>
       <div class="action-column">
         ${renderExpenseForm(group)}
+        ${renderDebts(group, stats.debts)}
         ${renderSettlementForm(group)}
         ${renderSettlements(group)}
       </div>
@@ -746,7 +746,7 @@ function renderDebts(group, debts) {
       <div class="panel-header">
         <div>
           <h2>Взаиморасчеты</h2>
-          <p>${debts.length ? "Минимальный набор переводов" : "Все уже в расчете"}</p>
+          <p>${debts.length ? "Кто кому в итоге сколько должен" : "Все уже в расчете"}</p>
         </div>
         ${icon("wallet")}
       </div>
@@ -772,7 +772,7 @@ function renderDebts(group, debts) {
                   <div class="transfer-side">
                     <strong class="amount">${formatMoney(debt.amount, group.currency)}</strong>
                     <button class="button secondary" type="button" data-action="prefill-settlement" data-from="${escapeAttribute(debt.from)}" data-to="${escapeAttribute(debt.to)}" data-amount="${debt.amount}">
-                      ${icon("check")}Записать
+                      ${icon("check")}Сейчас оплачу
                     </button>
                   </div>
                 </div>

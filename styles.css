@@ -1127,10 +1127,28 @@ a {
 }
 
 .action-column {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.08fr) minmax(260px, 0.92fr);
+  grid-template-areas:
+    "expense debts"
+    "expense settlement"
+    "history history";
+  align-items: start;
+}
+
+.expense-action {
+  grid-area: expense;
+}
+
+.settle-board {
+  grid-area: debts;
+}
+
+.settlement-action {
+  grid-area: settlement;
 }
 
 .payments-history {
+  grid-area: history;
   grid-column: 1 / -1;
 }
 
@@ -1278,6 +1296,7 @@ a {
 
 .settle-board {
   background: #fbfbff;
+  padding: 16px;
 }
 
 .transfer-card {
@@ -1331,6 +1350,51 @@ a {
   display: grid;
   gap: 8px;
   justify-items: end;
+}
+
+.settle-board .panel-header {
+  margin-bottom: 12px;
+}
+
+.settle-board .panel-header h2 {
+  font-size: 1rem;
+}
+
+.settle-board .panel-header p {
+  font-size: 0.84rem;
+}
+
+.settle-board .panel-header > svg {
+  width: 34px;
+  height: 34px;
+  padding: 8px;
+}
+
+.settle-board .debt-list {
+  gap: 8px;
+}
+
+.settle-board .transfer-card {
+  grid-template-columns: 1fr;
+  gap: 10px;
+  padding: 11px;
+}
+
+.settle-board .transfer-route {
+  grid-template-columns: auto minmax(0, 1fr) auto auto minmax(0, 1fr);
+  gap: 7px;
+}
+
+.settle-board .transfer-side {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  justify-items: stretch;
+}
+
+.settle-board .transfer-side .button {
+  min-height: 38px;
+  padding: 0 12px;
+  white-space: nowrap;
 }
 
 .transfer-side .amount {
@@ -1591,7 +1655,11 @@ a {
   }
 
   .action-column {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1.08fr) minmax(260px, 0.92fr);
+    grid-template-areas:
+      "expense debts"
+      "expense settlement"
+      "history history";
   }
 
   .payments-history {
@@ -1711,8 +1779,16 @@ a {
     order: 1;
   }
 
-  .workspace-feedback {
+  .settle-board {
     order: 2;
+  }
+
+  .settlement-action {
+    order: 3;
+  }
+
+  .workspace-feedback {
+    order: 4;
     top: 112px;
     right: 14px;
     left: 14px;
@@ -1720,26 +1796,18 @@ a {
   }
 
   .trip-hero {
-    order: 3;
-  }
-
-  .settlement-summary {
-    order: 4;
-  }
-
-  .members-panel {
     order: 5;
   }
 
-  .settle-board {
+  .settlement-summary {
     order: 6;
   }
 
-  .expenses-board {
+  .members-panel {
     order: 7;
   }
 
-  .settlement-action {
+  .expenses-board {
     order: 8;
   }
 
@@ -1898,31 +1966,31 @@ a {
     order: 1;
   }
 
-  .workspace-feedback {
+  .settle-board {
     order: 2;
   }
 
-  .trip-hero {
+  .settlement-action {
     order: 3;
   }
 
-  .settlement-summary {
+  .workspace-feedback {
     order: 4;
   }
 
-  .members-panel {
+  .trip-hero {
     order: 5;
   }
 
-  .settle-board {
+  .settlement-summary {
     order: 6;
   }
 
-  .expenses-board {
+  .members-panel {
     order: 7;
   }
 
-  .settlement-action {
+  .expenses-board {
     order: 8;
   }
 
