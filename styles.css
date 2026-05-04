@@ -524,8 +524,40 @@ a {
 .error {
   margin: 14px 0 0;
   padding: 11px 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
   border-radius: var(--radius-sm);
   font-size: 0.9rem;
+}
+
+.feedback-message {
+  pointer-events: auto;
+}
+
+.feedback-message span {
+  min-width: 0;
+}
+
+.feedback-dismiss {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.62);
+  color: currentColor;
+  cursor: pointer;
+}
+
+.feedback-dismiss:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.feedback-dismiss svg {
+  width: 16px;
+  height: 16px;
 }
 
 .notice {

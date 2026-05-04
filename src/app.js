@@ -2,12 +2,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CONFIG_STORAGE_KEY = "splitfair.supabase.config";
 const SELECTED_GROUP_KEY = "splitfair.selectedGroupId";
-const NOTICE_HIDE_DELAY_MS = 5000;
+const FEEDBACK_HIDE_DELAY_MS = 5000;
 const app = document.querySelector("#app");
 
 let supabase = null;
 let authSubscription = null;
-let noticeHideTimer = null;
+let feedbackHideTimer = null;
 
 const state = {
   config: null,
@@ -384,8 +384,8 @@ function renderAuth() {
           <button class="button google-button" type="button" data-action="google-sign-in">${icon("log-in")}Начать</button>
         </div>
         <div class="auth-feedback">
-          ${state.notice ? `<div class="notice">${escapeHtml(state.notice)}</div>` : ""}
-          ${state.error ? `<div class="error">${escapeHtml(state.error)}</div>` : ""}
+          ${state.notice ? renderFeedbackMessage("notice", state.notice) : ""}
+          ${state.error ? renderFeedbackMessage("error", state.error) : ""}
         </div>
       </section>
     </main>
@@ -394,6 +394,8 @@ function renderAuth() {
   document.querySelectorAll("[data-action='google-sign-in']").forEach((button) => {
     button.addEventListener("click", handleGoogleSignIn);
   });
+  bindFeedbackDismissEvents();
+  syncFeedbackTimer();
 }
 
 function renderBrandPanel() {
@@ -467,7 +469,7 @@ function renderApp() {
   `;
 
   bindAppEvents();
-  syncNoticeTimer();
+  syncFeedbackTimer();
 }
 
 function renderGroupTab(group) {
@@ -640,8 +642,17 @@ function renderFeedback() {
 
   return `
     <div class="workspace-feedback">
-      ${state.notice ? `<div class="notice">${escapeHtml(state.notice)}</div>` : ""}
-      ${state.error ? `<div class="error">${escapeHtml(state.error)}</div>` : ""}
+      ${state.notice ? renderFeedbackMessage("notice", state.notice) : ""}
+      ${state.error ? renderFeedbackMessage("error", state.error) : ""}
+    </div>
+  `;
+}
+
+function renderFeedbackMessage(type, message) {
+  return `
+    <div class="${type} feedback-message">
+      <span>${escapeHtml(message)}</span>
+      <button class="feedback-dismiss" type="button" data-action="dismiss-feedback" data-feedback-type="${type}" title="Закрыть" aria-label="Закрыть">${icon("x")}</button>
     </div>
   `;
 }
@@ -952,6 +963,8 @@ function renderSettlements(group) {
 }
 
 function bindAppEvents() {
+  bindFeedbackDismissEvents();
+
   document
     .querySelector("[data-action='sign-out']")
     ?.addEventListener("click", async () => {
@@ -991,6 +1004,23 @@ function bindAppEvents() {
     ?.addEventListener("submit", handleCreateSettlement);
 
   bindSplitEditor();
+}
+
+function bindFeedbackDismissEvents() {
+  document.querySelectorAll("[data-action='dismiss-feedback']").forEach((button) => {
+    button.addEventListener("click", () => dismissFeedback(button.dataset.feedbackType));
+  });
+}
+
+function dismissFeedback(type) {
+  if (type === "notice") state.notice = "";
+  if (type === "error") state.error = "";
+
+  if (state.session) {
+    renderApp();
+  } else {
+    renderAuth();
+  }
 }
 
 async function selectGroup(groupId) {
@@ -1482,31 +1512,37 @@ function showAppError(error) {
   renderApp();
 }
 
-function syncNoticeTimer() {
-  if (state.notice) {
-    scheduleNoticeHide(state.notice);
+function syncFeedbackTimer() {
+  if (state.notice || state.error) {
+    scheduleFeedbackHide(state.notice, state.error);
     return;
   }
 
-  if (noticeHideTimer) {
-    clearTimeout(noticeHideTimer);
-    noticeHideTimer = null;
+  if (feedbackHideTimer) {
+    clearTimeout(feedbackHideTimer);
+    feedbackHideTimer = null;
   }
 }
 
-function scheduleNoticeHide(notice) {
-  if (noticeHideTimer) {
-    clearTimeout(noticeHideTimer);
+function scheduleFeedbackHide(notice, error) {
+  if (feedbackHideTimer) {
+    clearTimeout(feedbackHideTimer);
   }
 
-  noticeHideTimer = window.setTimeout(() => {
-    noticeHideTimer = null;
+  feedbackHideTimer = window.setTimeout(() => {
+    feedbackHideTimer = null;
 
-    if (state.notice !== notice) return;
+    if (state.notice !== notice || state.error !== error) return;
 
     state.notice = "";
-    renderApp();
-  }, NOTICE_HIDE_DELAY_MS);
+    state.error = "";
+
+    if (state.session) {
+      renderApp();
+    } else {
+      renderAuth();
+    }
+  }, FEEDBACK_HIDE_DELAY_MS);
 }
 
 function getSelectedGroup() {
@@ -1647,6 +1683,8 @@ function icon(name) {
       '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>',
     wallet:
       '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3v4a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V5"></path><path d="M18 12h.01"></path>',
+    x:
+      '<path d="M18 6 6 18"></path><path d="m6 6 12 12"></path>',
   };
 
   return `
