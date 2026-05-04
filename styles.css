@@ -380,23 +380,25 @@ a {
 .panel-header {
   min-width: 0;
   display: flex;
-  justify-content: space-between;
-  gap: 14px;
+  justify-content: flex-start;
+  gap: 10px;
   align-items: start;
   margin-bottom: 18px;
 }
 
 .panel-header > div {
   min-width: 0;
+  flex: 1;
 }
 
 .panel-header > svg {
-  width: 38px;
-  height: 38px;
-  padding: 9px;
-  border-radius: var(--radius);
-  background: var(--tutu-lavender);
-  color: var(--tutu-navy);
+  order: -1;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--tutu-purple);
+  pointer-events: none;
 }
 
 .panel-header h2,
@@ -1188,20 +1190,20 @@ a {
 
 .eyebrow {
   width: fit-content;
-  padding: 7px 11px;
+  padding: 0;
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  border-radius: 999px;
-  background: #fff;
-  color: var(--tutu-navy);
+  color: rgba(255, 255, 255, 0.82);
   font-size: 0.82rem;
   font-weight: 900;
+  pointer-events: none;
 }
 
 .eyebrow svg {
   width: 16px;
   height: 16px;
+  color: #ffd2ad;
 }
 
 .trip-hero h1 {
@@ -1262,19 +1264,19 @@ a {
 
 .trip-meta-row span {
   min-height: 38px;
-  padding: 8px 12px;
+  padding: 0;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
+  color: rgba(255, 255, 255, 0.86);
   font-weight: 850;
+  pointer-events: none;
 }
 
 .trip-meta-row svg {
   width: 17px;
   height: 17px;
+  color: #ffd2ad;
 }
 
 .settlement-summary .summary-tile {
@@ -1386,9 +1388,8 @@ a {
 }
 
 .settle-board .panel-header > svg {
-  width: 34px;
-  height: 34px;
-  padding: 8px;
+  width: 22px;
+  height: 22px;
 }
 
 .settle-board .debt-list {
