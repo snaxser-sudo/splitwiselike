@@ -102,6 +102,14 @@ async function initializeSupabase() {
 
 async function readInitialSession() {
   try {
+    const redirectSession = await readRedirectSession();
+    if (redirectSession) return redirectSession;
+  } catch (error) {
+    state.error = readableError(error);
+    clearAuthRedirectHash();
+  }
+
+  try {
     const {
       data: { session },
       error,
@@ -117,6 +125,43 @@ async function readInitialSession() {
     state.error = readableError(error);
     return null;
   }
+}
+
+async function readRedirectSession() {
+  const url = new URL(window.location.href);
+  const hash = url.hash.startsWith("#") ? url.hash.slice(1) : url.hash;
+  const params = new URLSearchParams(hash);
+  const accessToken = params.get("access_token");
+  const refreshToken = params.get("refresh_token");
+
+  if (!accessToken || !refreshToken) return null;
+
+  const {
+    data: { session },
+    error,
+  } = await withTimeout(
+    supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    }),
+    SUPABASE_STARTUP_TIMEOUT_MS,
+    "Не удалось завершить вход. Попробуйте войти заново.",
+  );
+
+  if (error) throw error;
+
+  url.hash = "";
+  window.history.replaceState({}, document.title, url.toString());
+  return session;
+}
+
+function clearAuthRedirectHash() {
+  const url = new URL(window.location.href);
+
+  if (!hasAuthSessionHash(url)) return;
+
+  url.hash = "";
+  window.history.replaceState({}, document.title, url.toString());
 }
 
 async function bootAuthenticated() {
