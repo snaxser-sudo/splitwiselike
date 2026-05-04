@@ -3,6 +3,7 @@ const SELECTED_GROUP_KEY = "splitfair.selectedGroupId";
 const FEEDBACK_HIDE_DELAY_MS = 5000;
 const SUPABASE_MODULE_TIMEOUT_MS = 5000;
 const SUPABASE_STARTUP_TIMEOUT_MS = 10000;
+const SUPABASE_AUTH_REDIRECT_TIMEOUT_MS = 20000;
 const AUTH_DEBUG_LIMIT = 40;
 const SUPABASE_MODULE_URLS = [
   "https://esm.sh/@supabase/supabase-js@2",
@@ -81,7 +82,7 @@ async function initializeSupabase() {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: true,
+        detectSessionInUrl: false,
       },
     },
   );
@@ -132,9 +133,11 @@ async function readInitialSession() {
     }
   } catch (error) {
     state.error = readableError(error);
+    state.notice = "";
     recordAuthDebug("session:redirect-error", { error });
-    window.alert(`Ошибка завершения входа: ${state.error}`);
     clearAuthRedirectHash();
+    recordAuthDebug("session:redirect-aborted");
+    return null;
   }
 
   try {
@@ -193,7 +196,7 @@ async function readRedirectSession() {
       access_token: accessToken,
       refresh_token: refreshToken,
     }),
-    SUPABASE_STARTUP_TIMEOUT_MS,
+    SUPABASE_AUTH_REDIRECT_TIMEOUT_MS,
     "Не удалось завершить вход. Попробуйте войти заново.",
   );
 
@@ -588,6 +591,7 @@ function renderAuth() {
           </div>
           <button class="button google-button" type="button" data-action="google-sign-in">${icon("log-in")}Войти через Google</button>
         </div>
+        ${renderAuthFeedback()}
         <div class="tutu-hero-copy">
           <h1>Едете куда-то вместе с друзьями?</h1>
           <p>Мы сделаем расчёты между вами в разы проще: добавляйте траты, делите расходы и сразу видьте, кто кому должен.</p>
@@ -621,11 +625,6 @@ function renderAuth() {
           <span><strong>3</strong>Сведите долги к одному переводу</span>
           <button class="button google-button" type="button" data-action="google-sign-in">${icon("log-in")}Начать</button>
         </div>
-        <div class="auth-feedback">
-          ${state.notice ? renderFeedbackMessage("notice", state.notice) : ""}
-          ${state.error ? renderFeedbackMessage("error", state.error) : ""}
-          ${renderAuthDebug()}
-        </div>
       </section>
     </main>
   `;
@@ -636,6 +635,16 @@ function renderAuth() {
   bindFeedbackDismissEvents();
   bindAuthDebugEvents();
   syncFeedbackTimer();
+}
+
+function renderAuthFeedback() {
+  const content = `
+    ${state.notice ? renderFeedbackMessage("notice", state.notice) : ""}
+    ${state.error ? renderFeedbackMessage("error", state.error) : ""}
+    ${renderAuthDebug()}
+  `;
+
+  return content.trim() ? `<div class="auth-feedback">${content}</div>` : "";
 }
 
 function renderAuthDebug() {
@@ -695,7 +704,6 @@ async function handleGoogleSignIn() {
     state.error = readableError(error);
     state.notice = "";
     recordAuthDebug("oauth:google-error", { error });
-    window.alert(`Ошибка входа: ${state.error}`);
     renderAuth();
   }
 }
@@ -1890,7 +1898,9 @@ async function handleCopyAuthDebug() {
 
   try {
     await navigator.clipboard.writeText(text);
-    window.alert("Диагностика входа скопирована.");
+    state.notice = "Диагностика входа скопирована.";
+    state.error = "";
+    renderAuth();
   } catch {
     window.prompt("Скопируйте диагностику входа:", text);
   }
