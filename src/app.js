@@ -99,6 +99,9 @@ async function bootAuthenticated() {
     const joinedGroupId = await consumeInviteFromUrl();
     await loadWorkspace(joinedGroupId);
     renderApp();
+    if (joinedGroupId && state.notice === "Приглашение принято.") {
+      scheduleNoticeHide(state.notice);
+    }
   } catch (error) {
     state.error = readableError(error);
     await loadWorkspace();
