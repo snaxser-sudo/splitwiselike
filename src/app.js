@@ -772,7 +772,7 @@ function renderDebts(group, debts) {
                   <div class="transfer-side">
                     <strong class="amount">${formatMoney(debt.amount, group.currency)}</strong>
                     <button class="button secondary" type="button" data-action="prefill-settlement" data-from="${escapeAttribute(debt.from)}" data-to="${escapeAttribute(debt.to)}" data-amount="${debt.amount}">
-                      ${icon("check")}Сейчас оплачу
+                      ${icon("arrow-down")}Сейчас оплачу
                     </button>
                   </div>
                 </div>
@@ -1838,6 +1838,8 @@ function readableError(error) {
 
 function icon(name) {
   const paths = {
+    "arrow-down":
+      '<path d="M12 5v14"></path><path d="m19 12-7 7-7-7"></path>',
     check:
       '<path d="M20 6 9 17l-5-5"></path>',
     "chevron-right":
