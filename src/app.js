@@ -1,5 +1,6 @@
 const CONFIG_STORAGE_KEY = "splitfair.supabase.config";
 const SELECTED_GROUP_KEY = "splitfair.selectedGroupId";
+const SUPABASE_AUTH_STORAGE_KEY = "splitfair.supabase.auth";
 const FEEDBACK_HIDE_DELAY_MS = 5000;
 const SUPABASE_MODULE_TIMEOUT_MS = 5000;
 const SUPABASE_STARTUP_TIMEOUT_MS = 10000;
@@ -83,6 +84,7 @@ async function initializeSupabase() {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: false,
+        storageKey: SUPABASE_AUTH_STORAGE_KEY,
       },
     },
   );
@@ -136,6 +138,10 @@ async function readInitialSession() {
     state.notice = "";
     recordAuthDebug("session:redirect-error", { error });
     clearAuthRedirectHash();
+    recordAuthDebug("session:auth-storage-cleared", {
+      reason: "redirect-error",
+      removedItems: clearSupabaseAuthStorage(),
+    });
     recordAuthDebug("session:redirect-aborted");
     return null;
   }
@@ -159,6 +165,10 @@ async function readInitialSession() {
   } catch (error) {
     state.error = readableError(error);
     recordAuthDebug("session:get-session-error", { error });
+    recordAuthDebug("session:auth-storage-cleared", {
+      reason: "get-session-error",
+      removedItems: clearSupabaseAuthStorage(),
+    });
     return null;
   }
 }
@@ -222,6 +232,47 @@ function clearAuthRedirectHash() {
 
   url.hash = "";
   window.history.replaceState({}, document.title, url.toString());
+}
+
+function clearSupabaseAuthStorage() {
+  const removedItems = [];
+
+  removeAuthStorageItems(window.localStorage, "localStorage", removedItems);
+  removeAuthStorageItems(window.sessionStorage, "sessionStorage", removedItems);
+
+  return removedItems;
+}
+
+function removeAuthStorageItems(storage, storageName, removedItems) {
+  for (const key of getSupabaseAuthStorageKeys()) {
+    try {
+      if (storage.getItem(key) === null) continue;
+      storage.removeItem(key);
+      removedItems.push(`${storageName}:${key}`);
+    } catch {
+      removedItems.push(`${storageName}:unavailable`);
+      return;
+    }
+  }
+}
+
+function getSupabaseAuthStorageKeys() {
+  const keys = new Set([SUPABASE_AUTH_STORAGE_KEY]);
+  const projectRef = getSupabaseProjectRef();
+
+  if (projectRef) {
+    keys.add(`sb-${projectRef}-auth-token`);
+  }
+
+  return [...keys];
+}
+
+function getSupabaseProjectRef() {
+  try {
+    return new URL(state.config?.supabaseUrl || "").hostname.split(".")[0] || "";
+  } catch {
+    return "";
+  }
 }
 
 async function bootAuthenticated() {
