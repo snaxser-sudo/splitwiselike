@@ -1255,6 +1255,11 @@ a {
   color: #fff;
 }
 
+.trip-invite-card .button.danger {
+  background: #fff;
+  color: var(--red);
+}
+
 .trip-meta-row {
   display: flex;
   flex-wrap: wrap;

@@ -708,6 +708,9 @@ function renderFeedbackMessage(type, message) {
 
 function renderGroupHero(group) {
   const inviteUrl = getInviteUrl(group.invite_code);
+  const deleteButton = isGroupCreator(group)
+    ? `<button class="button danger" type="button" data-action="delete-group" data-group-id="${escapeAttribute(group.id)}" title="Удалить поездку">${icon("trash")}Удалить</button>`
+    : "";
 
   return `
     <section class="group-hero trip-hero">
@@ -721,6 +724,7 @@ function renderGroupHero(group) {
           <span>Приглашение в поездку</span>
           <strong class="code" title="${escapeAttribute(inviteUrl)}">${escapeHtml(group.invite_code)}</strong>
           <button class="button secondary" type="button" data-action="copy-invite" data-invite-url="${escapeAttribute(inviteUrl)}" title="Скопировать приглашение" aria-label="Скопировать приглашение">${icon("copy")}Скопировать</button>
+          ${deleteButton}
         </div>
       </div>
       <div class="trip-meta-row">
@@ -1046,6 +1050,10 @@ function bindAppEvents() {
     button.addEventListener("click", () => deleteSettlement(button.dataset.settlementId));
   });
 
+  document
+    .querySelector("[data-action='delete-group']")
+    ?.addEventListener("click", (event) => deleteGroup(event.currentTarget.dataset.groupId));
+
   document.querySelector("#group-form")?.addEventListener("submit", handleCreateGroup);
   document.querySelector("#join-form")?.addEventListener("submit", handleJoinGroup);
   document.querySelector("#profile-form")?.addEventListener("submit", handleProfileSave);
@@ -1263,6 +1271,41 @@ async function deleteSettlement(settlementId) {
     state.notice = "Перевод удален.";
     state.error = "";
     await loadWorkspace(state.selectedGroupId);
+    renderApp();
+  } catch (error) {
+    showAppError(error);
+  }
+}
+
+async function deleteGroup(groupId) {
+  const group = state.groups.find((item) => item.id === groupId);
+
+  if (!group || !isGroupCreator(group)) {
+    showAppError(new Error("Удалять поездку может только ее создатель."));
+    return;
+  }
+
+  if (
+    !window.confirm(
+      `Удалить поездку "${group.name}"? Все расходы и переводы внутри нее тоже удалятся.`,
+    )
+  ) {
+    return;
+  }
+
+  try {
+    const { error } = await supabase.from("groups").delete().eq("id", groupId);
+
+    if (error) throw error;
+
+    if (state.selectedGroupId === groupId) {
+      state.selectedGroupId = null;
+      localStorage.removeItem(SELECTED_GROUP_KEY);
+    }
+
+    state.notice = "Поездка удалена.";
+    state.error = "";
+    await loadWorkspace();
     renderApp();
   } catch (error) {
     showAppError(error);
@@ -1756,6 +1799,10 @@ function scheduleFeedbackHide(notice, error) {
 
 function getSelectedGroup() {
   return state.groups.find((group) => group.id === state.selectedGroupId) || null;
+}
+
+function isGroupCreator(group) {
+  return Boolean(group?.created_by && group.created_by === state.session?.user?.id);
 }
 
 function memberName(userId) {

@@ -246,11 +246,12 @@ using (public.is_group_owner(id, (select auth.uid())))
 with check (public.is_group_owner(id, (select auth.uid())));
 
 drop policy if exists "groups delete owner" on public.groups;
-create policy "groups delete owner"
+drop policy if exists "groups delete creator" on public.groups;
+create policy "groups delete creator"
 on public.groups
 for delete
 to authenticated
-using (public.is_group_owner(id, (select auth.uid())));
+using (created_by = (select auth.uid()));
 
 drop policy if exists "group members select group" on public.group_members;
 create policy "group members select group"
