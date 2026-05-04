@@ -1231,13 +1231,7 @@ function bindSplitEditor() {
 
   const paint = () => {
     const mode = form.elements.splitMode.value;
-    const hasParticipantControls =
-      editor.querySelectorAll(".split-participant").length > 0;
-    const checked = new Set(
-      [...editor.querySelectorAll(".split-participant:checked")].map(
-        (input) => input.value,
-      ),
-    );
+    const checked = readSelectedSplitParticipantIds();
     const manualValues = new Map(
       [...editor.querySelectorAll(".manual-share")].map((input) => [
         input.dataset.userId,
@@ -1250,10 +1244,6 @@ function bindSplitEditor() {
         input.value,
       ]),
     );
-
-    if (!hasParticipantControls) {
-      state.members.forEach((member) => checked.add(member.user_id));
-    }
 
     editor.dataset.mode = mode;
 
@@ -1320,7 +1310,7 @@ function renderManualSplitRows(values, checked) {
             <input class="split-participant" type="checkbox" value="${escapeAttribute(member.user_id)}" ${isChecked ? "checked" : ""} />
             <span>${escapeHtml(memberName(member.user_id))}</span>
           </label>
-          <input class="manual-share" data-user-id="${escapeAttribute(member.user_id)}" type="text" inputmode="decimal" value="${escapeAttribute(values.get(member.user_id) || "")}" ${isChecked ? "" : "disabled"} />
+          <input class="manual-share" data-user-id="${escapeAttribute(member.user_id)}" type="text" inputmode="decimal" value="${escapeAttribute(values.get(member.user_id) || "")}" />
         </div>
       `;
     })
@@ -1342,7 +1332,7 @@ function renderWeightedSplitRows(values, checked) {
             </label>
             <span class="muted weighted-amount" data-user-id="${escapeAttribute(member.user_id)}"></span>
           </span>
-          <input class="weighted-share" data-user-id="${escapeAttribute(member.user_id)}" type="text" inputmode="decimal" value="${escapeAttribute(value)}" aria-label="Доля для ${escapeAttribute(name)}" ${isChecked ? "" : "disabled"} />
+          <input class="weighted-share" data-user-id="${escapeAttribute(member.user_id)}" type="text" inputmode="decimal" value="${escapeAttribute(value)}" aria-label="Доля для ${escapeAttribute(name)}" />
         </div>
       `;
     })
@@ -1364,10 +1354,8 @@ function updateSplitPreview() {
   }
 
   if (form.elements.splitMode.value === "equal") {
-    const selected = [
-      ...document.querySelectorAll(".split-participant:checked"),
-    ].map((input) => input.value);
-    const shares = splitEqually(amountCents, selected);
+    const selected = readSelectedSplitParticipantIds();
+    const shares = splitEqually(amountCents, [...selected]);
 
     document.querySelectorAll(".equal-share").forEach((node) => {
       const share = shares.find((item) => item.user_id === node.dataset.userId);
@@ -1376,11 +1364,11 @@ function updateSplitPreview() {
         : formatMoney(0, getSelectedGroup()?.currency || "USD");
     });
 
-    preview.className = selected.length
+    preview.className = selected.size
       ? "split-preview balanced"
       : "split-preview mismatch";
-    preview.textContent = selected.length
-      ? `Поровну между участниками: ${selected.length}`
+    preview.textContent = selected.size
+      ? `Поровну между участниками: ${selected.size}`
       : "Выберите хотя бы одного участника";
     return;
   }
@@ -1458,11 +1446,9 @@ function readSplitsFromForm(amountCents) {
   const mode = document.querySelector("#expense-form").elements.splitMode.value;
 
   if (mode === "equal") {
-    const selected = [
-      ...document.querySelectorAll(".split-participant:checked"),
-    ].map((input) => input.value);
+    const selected = readSelectedSplitParticipantIds();
 
-    return splitEqually(amountCents, selected);
+    return splitEqually(amountCents, [...selected]);
   }
 
   if (mode === "shares") {
@@ -1509,10 +1495,14 @@ function readWeightsFromForm() {
 }
 
 function readSelectedSplitParticipantIds() {
+  const controls = [...document.querySelectorAll("#split-editor .split-participant")];
+
+  if (!controls.length) {
+    return new Set(state.members.map((member) => member.user_id));
+  }
+
   return new Set(
-    [...document.querySelectorAll(".split-participant:checked")].map(
-      (input) => input.value,
-    ),
+    controls.filter((input) => input.checked).map((input) => input.value),
   );
 }
 
