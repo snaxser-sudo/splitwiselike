@@ -3,6 +3,7 @@ const SELECTED_GROUP_KEY = "splitfair.selectedGroupId";
 const FEEDBACK_HIDE_DELAY_MS = 5000;
 const SUPABASE_MODULE_TIMEOUT_MS = 5000;
 const SUPABASE_STARTUP_TIMEOUT_MS = 10000;
+const AUTH_DEBUG_LIMIT = 40;
 const SUPABASE_MODULE_URLS = [
   "https://esm.sh/@supabase/supabase-js@2",
   "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm",
@@ -27,6 +28,7 @@ const state = {
   settlements: [],
   notice: "",
   error: "",
+  authDebug: [],
 };
 
 init().catch((error) => {
@@ -47,6 +49,10 @@ function renderStartupError(error) {
 
 async function init() {
   state.config = readConfig();
+  recordAuthDebug("init", {
+    hasConfig: hasConfig(state.config),
+    location: safeLocationSnapshot(),
+  });
 
   if (!hasConfig(state.config)) {
     renderSetup();
@@ -58,11 +64,15 @@ async function init() {
 }
 
 async function initializeSupabase() {
+  recordAuthDebug("initialize:start");
+
   if (authSubscription) {
     authSubscription.unsubscribe();
+    recordAuthDebug("initialize:unsubscribe-previous");
   }
 
   const createClient = await loadSupabaseClient();
+  recordAuthDebug("initialize:client-module-ready");
 
   supabase = createClient(
     state.config.supabaseUrl,
@@ -77,8 +87,17 @@ async function initializeSupabase() {
   );
 
   state.session = await readInitialSession();
+  recordAuthDebug("initialize:initial-session", {
+    hasSession: Boolean(state.session),
+  });
 
   const { data } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    recordAuthDebug("auth-state-change", {
+      event: _event,
+      hasSession: Boolean(session),
+      hasUser: Boolean(session?.user),
+    });
+
     state.session = session;
     state.notice = "";
     state.error = "";
@@ -101,11 +120,20 @@ async function initializeSupabase() {
 }
 
 async function readInitialSession() {
+  recordAuthDebug("session:start", {
+    location: safeLocationSnapshot(),
+  });
+
   try {
     const redirectSession = await readRedirectSession();
-    if (redirectSession) return redirectSession;
+    if (redirectSession) {
+      recordAuthDebug("session:redirect-session-ready");
+      return redirectSession;
+    }
   } catch (error) {
     state.error = readableError(error);
+    recordAuthDebug("session:redirect-error", { error });
+    window.alert(`Ошибка завершения входа: ${state.error}`);
     clearAuthRedirectHash();
   }
 
@@ -120,9 +148,14 @@ async function readInitialSession() {
     );
 
     if (error) throw error;
+    recordAuthDebug("session:get-session", {
+      hasSession: Boolean(session),
+      hasUser: Boolean(session?.user),
+    });
     return session;
   } catch (error) {
     state.error = readableError(error);
+    recordAuthDebug("session:get-session-error", { error });
     return null;
   }
 }
@@ -134,7 +167,23 @@ async function readRedirectSession() {
   const accessToken = params.get("access_token");
   const refreshToken = params.get("refresh_token");
 
-  if (!accessToken || !refreshToken) return null;
+  recordAuthDebug("session:redirect-hash", {
+    hashKeys: [...params.keys()],
+    hasAccessToken: Boolean(accessToken),
+    hasRefreshToken: Boolean(refreshToken),
+    tokenType: params.get("token_type") || "",
+    expiresIn: params.get("expires_in") || "",
+  });
+
+  if (!accessToken || !refreshToken) {
+    if (params.get("error") || params.get("error_description")) {
+      throw new Error(
+        params.get("error_description") || params.get("error") || "Ошибка входа.",
+      );
+    }
+
+    return null;
+  }
 
   const {
     data: { session },
@@ -149,9 +198,17 @@ async function readRedirectSession() {
   );
 
   if (error) throw error;
+  recordAuthDebug("session:set-session", {
+    hasSession: Boolean(session),
+    hasUser: Boolean(session?.user),
+    provider: session?.user?.app_metadata?.provider || "",
+  });
 
   url.hash = "";
   window.history.replaceState({}, document.title, url.toString());
+  recordAuthDebug("session:hash-cleared", {
+    location: safeLocationSnapshot(),
+  });
   return session;
 }
 
@@ -165,6 +222,11 @@ function clearAuthRedirectHash() {
 }
 
 async function bootAuthenticated() {
+  recordAuthDebug("boot:start", {
+    hasSession: Boolean(state.session),
+    hasUser: Boolean(state.session?.user),
+  });
+
   let joinedGroupId = null;
 
   try {
@@ -173,8 +235,10 @@ async function bootAuthenticated() {
       SUPABASE_STARTUP_TIMEOUT_MS,
       "Не удалось загрузить профиль.",
     );
+    recordAuthDebug("boot:profile-ready");
   } catch (error) {
     state.error = readableError(error);
+    recordAuthDebug("boot:profile-error", { error });
   }
 
   try {
@@ -183,8 +247,12 @@ async function bootAuthenticated() {
       SUPABASE_STARTUP_TIMEOUT_MS,
       "Не удалось принять приглашение.",
     );
+    recordAuthDebug("boot:invite-ready", {
+      joinedGroup: Boolean(joinedGroupId),
+    });
   } catch (error) {
     state.error = readableError(error);
+    recordAuthDebug("boot:invite-error", { error });
   }
 
   try {
@@ -193,8 +261,13 @@ async function bootAuthenticated() {
       SUPABASE_STARTUP_TIMEOUT_MS,
       "Не удалось загрузить поездки.",
     );
+    recordAuthDebug("boot:workspace-ready", {
+      groupCount: state.groups.length,
+      selectedGroup: Boolean(state.selectedGroupId),
+    });
   } catch (error) {
     state.error = readableError(error);
+    recordAuthDebug("boot:workspace-error", { error });
     clearWorkspace();
   }
 
@@ -206,6 +279,9 @@ async function loadSupabaseClient() {
 
   for (const url of SUPABASE_MODULE_URLS) {
     try {
+      recordAuthDebug("module:load-start", {
+        host: new URL(url).hostname,
+      });
       const module = await importWithTimeout(url, SUPABASE_MODULE_TIMEOUT_MS);
 
       if (typeof module.createClient !== "function") {
@@ -213,8 +289,15 @@ async function loadSupabaseClient() {
       }
 
       createSupabaseClient = module.createClient;
+      recordAuthDebug("module:load-success", {
+        host: new URL(url).hostname,
+      });
       return createSupabaseClient;
-    } catch {
+    } catch (error) {
+      recordAuthDebug("module:load-error", {
+        host: new URL(url).hostname,
+        error,
+      });
       // Try the next CDN before showing a user-facing startup error.
     }
   }
@@ -541,6 +624,7 @@ function renderAuth() {
         <div class="auth-feedback">
           ${state.notice ? renderFeedbackMessage("notice", state.notice) : ""}
           ${state.error ? renderFeedbackMessage("error", state.error) : ""}
+          ${renderAuthDebug()}
         </div>
       </section>
     </main>
@@ -550,7 +634,20 @@ function renderAuth() {
     button.addEventListener("click", handleGoogleSignIn);
   });
   bindFeedbackDismissEvents();
+  bindAuthDebugEvents();
   syncFeedbackTimer();
+}
+
+function renderAuthDebug() {
+  if (!state.authDebug.length) return "";
+
+  return `
+    <details class="auth-debug" open>
+      <summary>Диагностика входа</summary>
+      <pre>${escapeHtml(authDebugText())}</pre>
+      <button class="button secondary" type="button" data-action="copy-auth-debug">${icon("copy")}Скопировать диагностику</button>
+    </details>
+  `;
 }
 
 function renderBrandPanel() {
@@ -577,6 +674,10 @@ function renderBrandPanel() {
 
 async function handleGoogleSignIn() {
   try {
+    recordAuthDebug("oauth:google-click", {
+      redirectTo: getCurrentPageUrl(),
+    });
+
     const { error } = await withTimeout(
       supabase.auth.signInWithOAuth({
         provider: "google",
@@ -589,9 +690,12 @@ async function handleGoogleSignIn() {
     );
 
     if (error) throw error;
+    recordAuthDebug("oauth:google-started");
   } catch (error) {
     state.error = readableError(error);
     state.notice = "";
+    recordAuthDebug("oauth:google-error", { error });
+    window.alert(`Ошибка входа: ${state.error}`);
     renderAuth();
   }
 }
@@ -1180,6 +1284,12 @@ function bindFeedbackDismissEvents() {
   document.querySelectorAll("[data-action='dismiss-feedback']").forEach((button) => {
     button.addEventListener("click", () => dismissFeedback(button.dataset.feedbackType));
   });
+}
+
+function bindAuthDebugEvents() {
+  document
+    .querySelector("[data-action='copy-auth-debug']")
+    ?.addEventListener("click", handleCopyAuthDebug);
 }
 
 function dismissFeedback(type) {
@@ -1775,6 +1885,17 @@ async function handleCopyInvite(event) {
   }
 }
 
+async function handleCopyAuthDebug() {
+  const text = authDebugText();
+
+  try {
+    await navigator.clipboard.writeText(text);
+    window.alert("Диагностика входа скопирована.");
+  } catch {
+    window.prompt("Скопируйте диагностику входа:", text);
+  }
+}
+
 function prefillSettlement(dataset) {
   const panel = document.querySelector("#settlement-panel");
   const form = document.querySelector("#settlement-form");
@@ -1873,6 +1994,80 @@ function showAppError(error) {
   state.error = readableError(error);
   state.notice = "";
   renderApp();
+}
+
+function recordAuthDebug(step, details = {}) {
+  const entry = {
+    at: new Date().toISOString(),
+    step,
+    details: sanitizeAuthDebugValue("details", details),
+  };
+
+  state.authDebug.push(entry);
+
+  if (state.authDebug.length > AUTH_DEBUG_LIMIT) {
+    state.authDebug.splice(0, state.authDebug.length - AUTH_DEBUG_LIMIT);
+  }
+
+  console.info("[SplitFair auth]", entry);
+}
+
+function authDebugText() {
+  return state.authDebug
+    .map((entry) => {
+      const details = Object.keys(entry.details || {}).length
+        ? ` ${JSON.stringify(entry.details)}`
+        : "";
+      return `${entry.at} ${entry.step}${details}`;
+    })
+    .join("\n");
+}
+
+function sanitizeAuthDebugValue(key, value) {
+  if (value instanceof Error) {
+    return {
+      name: value.name,
+      message: readableError(value),
+      status: value.status || value.code || "",
+    };
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeAuthDebugValue(key, item));
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([itemKey, itemValue]) => [
+        itemKey,
+        sanitizeAuthDebugValue(itemKey, itemValue),
+      ]),
+    );
+  }
+
+  if (typeof value === "string") {
+    if (/token|secret|password|authorization|jwt|key/i.test(key)) {
+      return value ? `[redacted:${value.length}]` : "";
+    }
+
+    return value.length > 500 ? `${value.slice(0, 500)}...` : value;
+  }
+
+  return value;
+}
+
+function safeLocationSnapshot() {
+  const url = new URL(window.location.href);
+  const hash = url.hash.startsWith("#") ? url.hash.slice(1) : url.hash;
+  const hashKeys = hash ? [...new URLSearchParams(hash).keys()] : [];
+
+  return {
+    origin: url.origin,
+    pathname: url.pathname,
+    search: url.search,
+    hasHash: Boolean(url.hash),
+    hashKeys,
+  };
 }
 
 function syncFeedbackTimer() {

@@ -277,6 +277,37 @@ a {
   max-width: 620px;
 }
 
+.auth-debug {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: var(--radius-sm);
+  background: rgba(9, 3, 95, 0.28);
+  color: #fff;
+}
+
+.auth-debug summary {
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.auth-debug pre {
+  max-height: 220px;
+  margin: 12px 0;
+  padding: 10px;
+  overflow: auto;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.92);
+  color: #09035f;
+  font-size: 0.78rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.auth-debug .button {
+  min-height: 38px;
+}
+
 .brand-panel,
 .form-panel,
 .panel,
