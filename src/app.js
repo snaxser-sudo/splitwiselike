@@ -1231,6 +1231,8 @@ function bindSplitEditor() {
 
   const paint = () => {
     const mode = form.elements.splitMode.value;
+    const hasParticipantControls =
+      editor.querySelectorAll(".split-participant").length > 0;
     const checked = new Set(
       [...editor.querySelectorAll(".split-participant:checked")].map(
         (input) => input.value,
@@ -1249,26 +1251,29 @@ function bindSplitEditor() {
       ]),
     );
 
-    if (!checked.size && editor.dataset.mode !== "equal") {
+    if (!hasParticipantControls) {
       state.members.forEach((member) => checked.add(member.user_id));
     }
 
     editor.dataset.mode = mode;
 
     if (mode === "manual") {
-      editor.innerHTML = renderManualSplitRows(manualValues);
+      editor.innerHTML = renderManualSplitRows(manualValues, checked);
     } else if (mode === "shares") {
-      editor.innerHTML = renderWeightedSplitRows(shareValues);
+      editor.innerHTML = renderWeightedSplitRows(shareValues, checked);
     } else {
       editor.innerHTML = renderEqualSplitRows(checked);
     }
 
     editor
-      .querySelectorAll("input")
+      .querySelectorAll("input:not(.split-participant)")
       .forEach((input) => input.addEventListener("input", updateSplitPreview));
     editor
-      .querySelectorAll("input")
+      .querySelectorAll("input:not(.split-participant)")
       .forEach((input) => input.addEventListener("change", updateSplitPreview));
+    editor
+      .querySelectorAll(".split-participant")
+      .forEach((input) => input.addEventListener("change", paint));
 
     updateSplitPreview();
   };
@@ -1291,7 +1296,7 @@ function bindSplitEditor() {
 function renderEqualSplitRows(checked) {
   return state.members
     .map((member) => {
-      const isChecked = checked.size ? checked.has(member.user_id) : true;
+      const isChecked = checked.has(member.user_id);
       return `
         <div class="split-row">
           <label>
@@ -1305,31 +1310,39 @@ function renderEqualSplitRows(checked) {
     .join("");
 }
 
-function renderManualSplitRows(values) {
+function renderManualSplitRows(values, checked) {
   return state.members
-    .map(
-      (member) => `
+    .map((member) => {
+      const isChecked = checked.has(member.user_id);
+      return `
         <div class="split-row">
-          <span>${escapeHtml(memberName(member.user_id))}</span>
-          <input class="manual-share" data-user-id="${escapeAttribute(member.user_id)}" type="text" inputmode="decimal" value="${escapeAttribute(values.get(member.user_id) || "")}" />
+          <label>
+            <input class="split-participant" type="checkbox" value="${escapeAttribute(member.user_id)}" ${isChecked ? "checked" : ""} />
+            <span>${escapeHtml(memberName(member.user_id))}</span>
+          </label>
+          <input class="manual-share" data-user-id="${escapeAttribute(member.user_id)}" type="text" inputmode="decimal" value="${escapeAttribute(values.get(member.user_id) || "")}" ${isChecked ? "" : "disabled"} />
         </div>
-      `,
-    )
+      `;
+    })
     .join("");
 }
 
-function renderWeightedSplitRows(values) {
+function renderWeightedSplitRows(values, checked) {
   return state.members
     .map((member) => {
       const name = memberName(member.user_id);
       const value = values.has(member.user_id) ? values.get(member.user_id) : "1";
+      const isChecked = checked.has(member.user_id);
       return `
         <div class="split-row">
           <span class="split-person">
-            <span>${escapeHtml(name)}</span>
+            <label>
+              <input class="split-participant" type="checkbox" value="${escapeAttribute(member.user_id)}" ${isChecked ? "checked" : ""} />
+              <span>${escapeHtml(name)}</span>
+            </label>
             <span class="muted weighted-amount" data-user-id="${escapeAttribute(member.user_id)}"></span>
           </span>
-          <input class="weighted-share" data-user-id="${escapeAttribute(member.user_id)}" type="text" inputmode="decimal" value="${escapeAttribute(value)}" aria-label="Доля для ${escapeAttribute(name)}" />
+          <input class="weighted-share" data-user-id="${escapeAttribute(member.user_id)}" type="text" inputmode="decimal" value="${escapeAttribute(value)}" aria-label="Доля для ${escapeAttribute(name)}" ${isChecked ? "" : "disabled"} />
         </div>
       `;
     })
@@ -1378,6 +1391,16 @@ function updateSplitPreview() {
     let weightedSplits = [];
     let totalWeight = 0;
     let hasInvalidWeight = false;
+    const selected = readSelectedSplitParticipantIds();
+
+    if (!selected.size) {
+      document.querySelectorAll(".weighted-amount").forEach((node) => {
+        node.textContent = "";
+      });
+      preview.className = "split-preview mismatch";
+      preview.textContent = "Выберите хотя бы одного участника";
+      return;
+    }
 
     try {
       const weights = readWeightsFromForm();
@@ -1403,8 +1426,16 @@ function updateSplitPreview() {
     return;
   }
 
+  const selected = readSelectedSplitParticipantIds();
+  if (!selected.size) {
+    preview.className = "split-preview mismatch";
+    preview.textContent = "Выберите хотя бы одного участника";
+    return;
+  }
+
   const manualTotal = [...document.querySelectorAll(".manual-share")].reduce(
     (sum, input) => {
+      if (!selected.has(input.dataset.userId)) return sum;
       try {
         return sum + parseMoneyToCents(input.value);
       } catch {
@@ -1438,7 +1469,9 @@ function readSplitsFromForm(amountCents) {
     return splitByWeights(amountCents, readWeightsFromForm());
   }
 
+  const selected = readSelectedSplitParticipantIds();
   return [...document.querySelectorAll(".manual-share")]
+    .filter((input) => selected.has(input.dataset.userId))
     .map((input) => ({
       user_id: input.dataset.userId,
       share_cents: parseMoneyToCents(input.value),
@@ -1464,12 +1497,23 @@ function splitEqually(amountCents, userIds) {
 }
 
 function readWeightsFromForm() {
+  const selected = readSelectedSplitParticipantIds();
+
   return [...document.querySelectorAll(".weighted-share")]
+    .filter((input) => selected.has(input.dataset.userId))
     .map((input) => ({
       user_id: input.dataset.userId,
       weight: parseWeight(input.value),
     }))
     .filter((item) => item.weight > 0);
+}
+
+function readSelectedSplitParticipantIds() {
+  return new Set(
+    [...document.querySelectorAll(".split-participant:checked")].map(
+      (input) => input.value,
+    ),
+  );
 }
 
 function parseWeight(value) {
