@@ -1,12 +1,16 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
 const CONFIG_STORAGE_KEY = "splitfair.supabase.config";
 const SELECTED_GROUP_KEY = "splitfair.selectedGroupId";
 const FEEDBACK_HIDE_DELAY_MS = 5000;
+const SUPABASE_MODULE_TIMEOUT_MS = 5000;
+const SUPABASE_MODULE_URLS = [
+  "https://esm.sh/@supabase/supabase-js@2",
+  "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm",
+];
 const AUTH_ERROR_QUERY_PARAMS = ["error", "error_code", "error_description"];
 const app = document.querySelector("#app");
 
 let supabase = null;
+let createSupabaseClient = null;
 let authSubscription = null;
 let feedbackHideTimer = null;
 
@@ -51,6 +55,8 @@ async function initializeSupabase() {
   if (authSubscription) {
     authSubscription.unsubscribe();
   }
+
+  const createClient = await loadSupabaseClient();
 
   supabase = createClient(
     state.config.supabaseUrl,
@@ -105,6 +111,46 @@ async function bootAuthenticated() {
     state.error = readableError(error);
     await loadWorkspace();
     renderApp();
+  }
+}
+
+async function loadSupabaseClient() {
+  if (createSupabaseClient) return createSupabaseClient;
+
+  for (const url of SUPABASE_MODULE_URLS) {
+    try {
+      const module = await importWithTimeout(url, SUPABASE_MODULE_TIMEOUT_MS);
+
+      if (typeof module.createClient !== "function") {
+        throw new Error("Supabase module loaded without createClient.");
+      }
+
+      createSupabaseClient = module.createClient;
+      return createSupabaseClient;
+    } catch {
+      // Try the next CDN before showing a user-facing startup error.
+    }
+  }
+
+  throw new Error(
+    "Не удалось загрузить Supabase. Проверьте интернет, VPN или блокировщик и обновите страницу.",
+  );
+}
+
+async function importWithTimeout(url, timeoutMs) {
+  let timeoutId = null;
+
+  try {
+    return await Promise.race([
+      import(url),
+      new Promise((_, reject) => {
+        timeoutId = window.setTimeout(() => {
+          reject(new Error(`Timed out while loading ${new URL(url).hostname}.`));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) window.clearTimeout(timeoutId);
   }
 }
 
@@ -168,8 +214,7 @@ async function ensureProfile() {
 }
 
 async function consumeInviteFromUrl() {
-  const url = new URL(window.location.href);
-  const inviteCode = url.searchParams.get("join");
+  const inviteCode = getInviteCodeFromUrl();
 
   if (!inviteCode || !state.session) return null;
 
@@ -179,7 +224,9 @@ async function consumeInviteFromUrl() {
 
   if (error) throw error;
 
+  const url = new URL(window.location.href);
   url.searchParams.delete("join");
+  url.pathname = url.pathname.replace(/\/join=[^/]*$/, "/");
   window.history.replaceState({}, document.title, url.toString());
   state.notice = "Приглашение принято.";
   return data;
@@ -340,7 +387,7 @@ function renderSetup() {
 }
 
 function renderAuth() {
-  const joinCode = new URL(window.location.href).searchParams.get("join");
+  const joinCode = getInviteCodeFromUrl();
 
   app.innerHTML = `
     <main class="screen auth-screen travel-auth-screen">
@@ -1761,10 +1808,21 @@ function removeAuthErrorParams(url) {
 
 function getInviteUrl(inviteCode) {
   const url = new URL(window.location.href);
+  url.pathname = url.pathname.replace(/\/join=[^/]*$/, "/");
   url.search = "";
   url.hash = "";
   url.searchParams.set("join", inviteCode);
   return url.toString();
+}
+
+function getInviteCodeFromUrl() {
+  const url = new URL(window.location.href);
+  const queryCode = normalizeText(url.searchParams.get("join"));
+
+  if (queryCode) return queryCode;
+
+  const pathMatch = url.pathname.match(/\/join=([^/]+)$/);
+  return pathMatch ? normalizeText(decodeURIComponent(pathMatch[1])) : "";
 }
 
 function parseMoneyToCents(value) {
