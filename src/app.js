@@ -99,9 +99,6 @@ async function bootAuthenticated() {
     const joinedGroupId = await consumeInviteFromUrl();
     await loadWorkspace(joinedGroupId);
     renderApp();
-    if (joinedGroupId && state.notice === "Приглашение принято.") {
-      scheduleNoticeHide(state.notice);
-    }
   } catch (error) {
     state.error = readableError(error);
     await loadWorkspace();
@@ -470,6 +467,7 @@ function renderApp() {
   `;
 
   bindAppEvents();
+  syncNoticeTimer();
 }
 
 function renderGroupTab(group) {
@@ -1119,7 +1117,6 @@ async function handleCreateExpense(event) {
     state.error = "";
     await loadWorkspace(group.id);
     renderApp();
-    scheduleNoticeHide(state.notice);
   } catch (error) {
     showAppError(error);
   }
@@ -1483,6 +1480,18 @@ function showAppError(error) {
   state.error = readableError(error);
   state.notice = "";
   renderApp();
+}
+
+function syncNoticeTimer() {
+  if (state.notice) {
+    scheduleNoticeHide(state.notice);
+    return;
+  }
+
+  if (noticeHideTimer) {
+    clearTimeout(noticeHideTimer);
+    noticeHideTimer = null;
+  }
 }
 
 function scheduleNoticeHide(notice) {
