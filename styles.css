@@ -1084,10 +1084,12 @@ a {
 
 .trip-hero-row {
   align-items: stretch;
+  flex-wrap: wrap;
 }
 
 .trip-hero-copy {
-  min-width: 0;
+  min-width: min(100%, 300px);
+  flex: 1 1 300px;
   display: grid;
   align-content: center;
   gap: 14px;
@@ -1130,6 +1132,7 @@ a {
 
 .trip-invite-card {
   min-width: min(100%, 260px);
+  flex: 0 1 260px;
   padding: 16px;
   display: grid;
   gap: 10px;

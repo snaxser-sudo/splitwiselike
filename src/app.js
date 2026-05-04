@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CONFIG_STORAGE_KEY = "splitfair.supabase.config";
 const SELECTED_GROUP_KEY = "splitfair.selectedGroupId";
-const NOTICE_HIDE_DELAY_MS = 2000;
+const NOTICE_HIDE_DELAY_MS = 5000;
 const app = document.querySelector("#app");
 
 let supabase = null;
