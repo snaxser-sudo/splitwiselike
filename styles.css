@@ -40,11 +40,15 @@
 }
 
 html {
+  width: 100%;
+  max-width: 100%;
   overflow-x: hidden;
 }
 
 body {
   margin: 0;
+  width: 100%;
+  max-width: 100%;
   min-width: 320px;
   min-height: 100vh;
   background:
@@ -52,6 +56,12 @@ body {
     linear-gradient(135deg, rgba(255, 122, 0, 0.08), transparent 42%),
     var(--bg);
   color: var(--ink);
+  overflow-x: hidden;
+}
+
+#app {
+  width: 100%;
+  max-width: 100%;
   overflow-x: hidden;
 }
 
@@ -355,6 +365,9 @@ a {
 
 .form-panel,
 .panel {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding: 22px;
 }
 
@@ -365,11 +378,16 @@ a {
 }
 
 .panel-header {
+  min-width: 0;
   display: flex;
   justify-content: space-between;
   gap: 14px;
   align-items: start;
   margin-bottom: 18px;
+}
+
+.panel-header > div {
+  min-width: 0;
 }
 
 .panel-header > svg {
@@ -386,6 +404,7 @@ a {
 .form-panel h2 {
   margin: 0;
   font-size: 1.1rem;
+  overflow-wrap: anywhere;
 }
 
 .panel-header p,
@@ -394,6 +413,7 @@ a {
   margin: 4px 0 0;
   color: var(--muted);
   font-size: 0.92rem;
+  overflow-wrap: anywhere;
 }
 
 .field {
@@ -538,6 +558,7 @@ a {
 
 .feedback-message span {
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .feedback-dismiss {
